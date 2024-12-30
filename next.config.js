@@ -43,7 +43,16 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true
+  swcMinify: true,
+  env: {
+    NEXT_PUBLIC_AZURE_STORAGE_CONNECTION_STRING: process.env.NEXT_PUBLIC_AZURE_STORAGE_CONNECTION_STRING,
+    DYNAMICS_URL: process.env.DYNAMICS_URL,
+    DYNAMICS_API_VERSION: process.env.DYNAMICS_API_VERSION,
+    DYNAMICS_ENTITY_NAME: process.env.DYNAMICS_ENTITY_NAME,
+    DYNAMICS_CLIENT_ID: process.env.DYNAMICS_CLIENT_ID,
+    DYNAMICS_CLIENT_SECRET: process.env.DYNAMICS_CLIENT_SECRET,
+    DYNAMICS_TENANT_ID: process.env.DYNAMICS_TENANT_ID
+  },
 }
 
 module.exports = withPWA(nextConfig)
