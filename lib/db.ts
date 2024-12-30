@@ -1,7 +1,6 @@
 import { openDB, DBSchema } from 'idb'
 import { compressImage } from './utils/image-compression'
 import { dynamics365Service } from './services/dynamics365'
-import { blobStorageService } from './services/blob-storage'
 import { Inspection } from './types'
 
 interface PendingSync {
@@ -121,8 +120,24 @@ async function saveLocalInspection(inspection: Inspection, imageFiles: File[]) {
     imageFiles.map(async (file) => {
       const compressed = await compressImage(file)
       const imageId = `${inspection.id}-${Math.random().toString(36).substring(7)}`
-      const imageUrl = await blobStorageService.uploadImage(compressed, imageId)
-      return imageUrl
+      
+      // Convert the compressed string to a Blob
+      const blob = await fetch(compressed).then(res => res.blob())
+      
+      const formData = new FormData()
+      formData.append('file', blob, imageId)
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const { url } = await response.json()
+      return url
     })
   )
 
