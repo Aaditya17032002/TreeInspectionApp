@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '../../../components/ui/button'
-import { ChevronLeft, MapPin, Calendar, User, Building2, FileText } from 'lucide-react'
+import { ChevronLeft, MapPin, Calendar, User, Building2, FileText, Image } from 'lucide-react'
 import { Badge } from '../../../components/ui/badge'
 import { getInspection, updateInspectionStatus, initDB } from '../../../lib/db'
 import { Inspection } from '../../../lib/types'
@@ -173,6 +173,22 @@ export default function InspectionDetailsPage() {
             label="Details"
             value={inspection.details}
             className="whitespace-pre-line"
+          />
+          <InfoItem
+            icon={Image}
+            label="Images"
+            value={
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {inspection.images && inspection.images.map((image, index) => (
+                  <img
+                    key={index}
+                    src={image}
+                    alt={`Inspection image ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                ))}
+              </div>
+            }
           />
         </div>
 

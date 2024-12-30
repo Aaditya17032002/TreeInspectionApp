@@ -8,6 +8,7 @@ import { ChevronLeft, Camera, Loader2, X } from 'lucide-react'
 import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { saveInspection } from '../../../lib/db'
+import { Inspection } from '../../../lib/types'
 
 export default function NewInspectionPage() {
   const router = useRouter()
@@ -75,21 +76,21 @@ export default function NewInspectionPage() {
     setLoading(true)
     try {
       // Get current location
-      const coordinates = await getCurrentLocation()
-      const { address, postalCode } = await getAddressFromCoordinates(coordinates)
+      const { coordinates: currentCoordinates } = await getCurrentLocation()
+      const { address, postalCode } = await getAddressFromCoordinates({ coordinates: currentCoordinates })
 
       // Generate inspection ID
       const inspectionId = Math.floor(Math.random() * 9000000) + 1000000
 
       // Create inspection
-      const inspection = {
+      const inspection: Inspection = {
         id: inspectionId.toString(),
         title,
-        status: 'Pending' as const,
+        status: 'Pending',
         location: {
           address,
           postalCode,
-          coordinates,
+          coordinates: currentCoordinates,
         },
         scheduledDate: new Date().toISOString(),
         inspector: {
@@ -101,7 +102,7 @@ export default function NewInspectionPage() {
         images: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        synced: false, // Add this line
+        synced: false,
       }
 
       await saveInspection(inspection, images)
@@ -112,7 +113,7 @@ export default function NewInspectionPage() {
         message: `Inspection #${inspectionId} has been created successfully.`,
       })
 
-      router.push('/')
+      router.push('/map')
     } catch (error) {
       console.error('Error creating inspection:', error)
       addNotification({

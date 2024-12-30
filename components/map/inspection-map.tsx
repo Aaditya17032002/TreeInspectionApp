@@ -7,46 +7,64 @@ import { Sheet, SheetContent } from '../../components/ui/sheet'
 import { Button } from '../../components/ui/button'
 import { Plus, MapPin } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { dummyInspections } from '../../lib/dummy-data'
 import { Badge } from '../../components/ui/badge'
-import React from 'react'
+import { getAllInspections } from '../../lib/db'
+import { Inspection } from '../../lib/types'
+import { getCurrentLocation } from '../../lib/services/geolocation'
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA'
 
 export function InspectionMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
-  const [selectedInspection, setSelectedInspection] = useState<any>(null)
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null)
+  const [inspections, setInspections] = useState<Inspection[]>([])
   const router = useRouter()
 
   useEffect(() => {
-    if (!mapContainer.current) return
+    const initializeMap = async () => {
+      if (!mapContainer.current) return
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-73.935242, 40.730610], // NYC coordinates
-      zoom: 12
-    })
+      const { coordinates: currentCoordinates } = await getCurrentLocation()
 
-    map.current.addControl(new mapboxgl.NavigationControl())
-
-    // Add markers for each inspection
-    dummyInspections.forEach(inspection => {
-      const marker = new mapboxgl.Marker({
-        color: '#7c3aed'
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: currentCoordinates,
+        zoom: 12
       })
-        .setLngLat(inspection.location.coordinates)
-        .addTo(map.current!)
 
-      // Add click event to marker
-      marker.getElement().addEventListener('click', () => {
-        setSelectedInspection(inspection)
-      })
-    })
+      map.current.addControl(new mapboxgl.NavigationControl())
+
+      // Add a marker for the current location
+      new mapboxgl.Marker({ color: '#FF0000' })
+        .setLngLat(currentCoordinates)
+        .addTo(map.current)
+
+      const inspectionsData = await getAllInspections()
+      setInspections(inspectionsData)
+
+      inspectionsData.forEach(inspection => addMarker(inspection))
+    }
+
+    initializeMap()
 
     return () => map.current?.remove()
   }, [])
+
+  const addMarker = (inspection: Inspection) => {
+    if (!map.current) return
+
+    const marker = new mapboxgl.Marker({
+      color: '#7c3aed'
+    })
+      .setLngLat(inspection.location.coordinates)
+      .addTo(map.current)
+
+    marker.getElement().addEventListener('click', () => {
+      setSelectedInspection(inspection)
+    })
+  }
 
   return (
     <div className="relative h-[calc(100vh-4rem)]">
@@ -85,13 +103,15 @@ export function InspectionMap() {
                   </div>
                 </div>
 
-                <div className="aspect-video relative rounded-lg overflow-hidden">
-                  <img
-                    src={selectedInspection.images[0]}
-                    alt="Inspection"
-                    className="object-cover w-full h-full"
-                  />
-                </div>
+                {selectedInspection.images && selectedInspection.images.length > 0 && (
+                  <div className="aspect-video relative rounded-lg overflow-hidden">
+                    <img
+                      src={selectedInspection.images[0]}
+                      alt="Inspection"
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                )}
 
                 <Button 
                   className="w-full"
