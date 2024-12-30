@@ -19,7 +19,8 @@ export const dummyInspections: Inspection[] = [
     details: 'LOCATION: IN FRONT OF THE BUILDING. DESCRIPTION: DEAD TREE NEEDS TO BE REMOVED. BRANCHES ARE FALLING AND POSING RISK TO PEDESTRIANS. INSPECTION REQUIRED TO ASSESS THE CONDITION AND DETERMINE THE SCOPE OF WORK.',
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T10:00:00.000Z',
-    updatedAt: '2024-01-20T10:00:00.000Z'
+    updatedAt: '2024-01-20T10:00:00.000Z',
+    synced: false
   },
   {
     id: '5148441',
@@ -39,7 +40,8 @@ export const dummyInspections: Inspection[] = [
     details: 'Regular maintenance inspection for tree pruning assessment.',
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T11:00:00.000Z',
-    updatedAt: '2024-01-20T11:00:00.000Z'
+    updatedAt: '2024-01-20T11:00:00.000Z',
+    synced: false
   },
   {
     id: '5148442',
@@ -59,7 +61,8 @@ export const dummyInspections: Inspection[] = [
     details: 'Site assessment for new tree planting location.',
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T12:00:00.000Z',
-    updatedAt: '2024-01-20T12:00:00.000Z'
+    updatedAt: '2024-01-20T12:00:00.000Z',
+    synced: false
   }
 ]
 
