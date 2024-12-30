@@ -17,6 +17,8 @@ export interface Inspection {
   images: string[]
   createdAt: string
   updatedAt: string
+  synced: boolean
+  dynamicsId?: string
 }
 
 export interface User {
