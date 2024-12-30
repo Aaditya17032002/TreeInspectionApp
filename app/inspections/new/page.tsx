@@ -8,7 +8,6 @@ import { ChevronLeft, Camera, Loader2, X } from 'lucide-react'
 import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { saveInspection } from '../../../lib/db'
-import React from 'react'
 
 export default function NewInspectionPage() {
   const router = useRouter()
@@ -102,6 +101,7 @@ export default function NewInspectionPage() {
         images: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        synced: false, // Add this line
       }
 
       await saveInspection(inspection, images)
