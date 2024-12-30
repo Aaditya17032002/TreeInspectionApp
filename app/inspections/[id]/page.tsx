@@ -174,22 +174,7 @@ export default function InspectionDetailsPage() {
             value={inspection.details}
             className="whitespace-pre-line"
           />
-          <InfoItem
-            icon={Image}
-            label="Images"
-            value={
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {inspection.images && inspection.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Inspection image ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
-            }
-          />
+          
         </div>
 
         <div className="mt-6 space-y-4">

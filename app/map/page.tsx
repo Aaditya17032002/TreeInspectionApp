@@ -1,5 +1,5 @@
 import React from 'react'
-import { InspectionMap } from '../../components/map/inspection-map'
+import InspectionMap from '../../components/map/inspection-map'
 
 export default function MapPage() {
   return (

@@ -1,86 +1,78 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from '../../components/ui/button';
-import { Plus, MapPin } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Badge } from '../../components/ui/badge';
-import { Inspection } from '../../lib/types';
-import { getCurrentLocation } from '../../lib/services/geolocation';
-import { Sheet, SheetContent } from '../ui/sheet';
+import { useEffect, useRef, useState } from 'react'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
+import { Button } from '../../components/ui/button'
+import { Plus } from 'lucide-react'
+import { InspectionSheet } from './components/inspection-sheet'
+import { NewInspectionDialog } from './components/new-inspection-dialog'
+import type { Inspection } from '../../lib/types'
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA';
+mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA'
 
-export function InspectionMap() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
-  const [inspections, setInspections] = useState<Inspection[]>([]);
-  const router = useRouter();
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([-73.935242, 40.730610]);
+export default function InspectionMap() {
+  const mapContainer = useRef<HTMLDivElement>(null)
+  const map = useRef<mapboxgl.Map | null>(null)
+  const [inspections, setInspections] = useState<Inspection[]>([])
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null)
+  const [isNewInspectionOpen, setIsNewInspectionOpen] = useState(false)
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([-73.935242, 40.730610])
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxgl.accessToken) return;
+    if (!mapContainer.current || !mapboxgl.accessToken) return
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
       center: currentLocation,
       zoom: 13
-    });
+    })
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
-        setCurrentLocation(newLocation);
-        map.current?.flyTo({ center: newLocation });
+        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude]
+        setCurrentLocation(newLocation)
+        map.current?.flyTo({ center: newLocation })
       },
       (error) => {
-        console.error('Error getting location:', error);
+        console.error('Error getting location:', error)
       }
-    );
+    )
 
-    return () => map.current?.remove();
-  }, []);
+    return () => map.current?.remove()
+  }, [])
 
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current) return
 
-    const markers = document.getElementsByClassName('marker');
-    while (markers[0]) {
-      markers[0].parentNode?.removeChild(markers[0]);
+    const markers = document.getElementsByClassName('marker')
+    while(markers[0]) {
+      markers[0].parentNode?.removeChild(markers[0])
     }
 
     inspections.forEach(inspection => {
-      addMarker(inspection);
-    });
-  }, [inspections]);
+      const el = document.createElement('div')
+      el.className = 'marker'
+      el.style.width = '24px'
+      el.style.height = '24px'
+      el.style.borderRadius = '50%'
+      el.style.backgroundColor = '#9333EA'
+      el.style.cursor = 'pointer'
+      el.style.border = '3px solid white'
+      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)'
 
-  const addMarker = (inspection: Inspection) => {
-    if (!map.current) return;
+      new mapboxgl.Marker(el)
+        .setLngLat(inspection.location.coordinates)
+        .addTo(map.current!)
 
-    const el = document.createElement('div');
-    el.className = 'marker';
-    el.style.width = '24px';
-    el.style.height = '24px';
-    el.style.borderRadius = '50%';
-    el.style.backgroundColor = '#9333EA';
-    el.style.cursor = 'pointer';
-    el.style.border = '3px solid white';
-    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      el.addEventListener('click', () => {
+        setSelectedInspection(inspection)
+      })
+    })
+  }, [inspections])
 
-    new mapboxgl.Marker(el)
-      .setLngLat(inspection.location.coordinates)
-      .addTo(map.current);
-
-    el.addEventListener('click', () => {
-      setSelectedInspection(inspection);
-    });
-  };
-
-  const handleNewInspection = (newInspection: Omit<Inspection, 'id'>) => {
+  const handleNewInspection = (newInspection: Omit<Inspection, "id">) => {
     const inspectionWithId: Inspection = {
       ...newInspection,
       id: Date.now().toString(),
@@ -88,69 +80,37 @@ export function InspectionMap() {
         ...newInspection.location,
         coordinates: currentLocation,
       },
-    };
-    setInspections(prev => [...prev, inspectionWithId]);
-    addMarker(inspectionWithId);  // Ensure marker is added for the new inspection
-  };
+    }
+    setInspections(prev => [...prev, inspectionWithId])
+  }
 
   return (
-    <div className="relative h-[calc(100vh-4rem)]">
-      <div ref={mapContainer} className="h-full w-full" />
-      
-      <Button
-        className="absolute top-4 right-4 bg-purple-600 hover:bg-purple-700"
-        onClick={() => router.push('/inspections/new')}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        New Inspection
-      </Button>
+    <div className="flex flex-col h-screen">
+      <header className="bg-white border-b p-4 flex justify-between items-center">
+        <h1 className="text-xl font-semibold">Map View</h1>
+        <Button 
+          onClick={() => setIsNewInspectionOpen(true)}
+          className="bg-purple-600 hover:bg-purple-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Inspection
+        </Button>
+      </header>
 
-      <Sheet open={!!selectedInspection} onOpenChange={() => setSelectedInspection(null)}>
-        <SheetContent side="bottom" className="h-[80vh]">
-          {selectedInspection && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">#{selectedInspection.id}</h2>
-                    <Badge>{selectedInspection.status}</Badge>
-                  </div>
-                  <p className="text-gray-600">{selectedInspection.title}</p>
-                </div>
-              </div>
+      <div className="flex-1 relative">
+        <div ref={mapContainer} className="w-full h-full" />
+      </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-                  <div>
-                    <p className="font-medium">{selectedInspection.location.address}</p>
-                    <p className="text-gray-600">
-                      Postal Code: {selectedInspection.location.postalCode}
-                    </p>
-                  </div>
-                </div>
+      <InspectionSheet
+        inspection={selectedInspection}
+        onClose={() => setSelectedInspection(null)}
+      />
 
-                {selectedInspection.images && selectedInspection.images.length > 0 && (
-                  <div className="aspect-video relative rounded-lg overflow-hidden">
-                    <img
-                      src={selectedInspection.images[0]}
-                      alt="Inspection"
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
-
-                <Button 
-                  className="w-full"
-                  onClick={() => router.push(`/inspections/${selectedInspection.id}`)}
-                >
-                  View Details
-                </Button>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <NewInspectionDialog
+        open={isNewInspectionOpen}
+        onOpenChange={setIsNewInspectionOpen}
+        onSave={handleNewInspection}
+      />
     </div>
-  );
+  )
 }
