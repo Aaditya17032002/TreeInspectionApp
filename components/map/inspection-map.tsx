@@ -1,93 +1,97 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
-import { Sheet, SheetContent } from '../../components/ui/sheet'
-import { Button } from '../../components/ui/button'
-import { Plus, MapPin } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { Badge } from '../../components/ui/badge'
-import { getAllInspections } from '../../lib/db'
-import { Inspection } from '../../lib/types'
-import { getCurrentLocation } from '../../lib/services/geolocation'
+import { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { Button } from '../../components/ui/button';
+import { Plus, MapPin } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Badge } from '../../components/ui/badge';
+import { Inspection } from '../../lib/types';
+import { getCurrentLocation } from '../../lib/services/geolocation';
+import { Sheet, SheetContent } from '../ui/sheet';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA'
+mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA';
 
 export function InspectionMap() {
-  const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<mapboxgl.Map | null>(null)
-  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null)
-  const [inspections, setInspections] = useState<Inspection[]>([])
-  const router = useRouter()
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([-73.935242, 40.730610])
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const router = useRouter();
+  const [currentLocation, setCurrentLocation] = useState<[number, number]>([-73.935242, 40.730610]);
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxgl.accessToken) return
+    if (!mapContainer.current || !mapboxgl.accessToken) return;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
       center: currentLocation,
       zoom: 13
-    })
+    });
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude]
-        setCurrentLocation(newLocation)
-        map.current?.flyTo({ center: newLocation })
+        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setCurrentLocation(newLocation);
+        map.current?.flyTo({ center: newLocation });
       },
       (error) => {
-        console.error('Error getting location:', error)
+        console.error('Error getting location:', error);
       }
-    )
+    );
 
-    return () => map.current?.remove()
-  }, [])
+    return () => map.current?.remove();
+  }, []);
 
   useEffect(() => {
-    if (!map.current) return
+    if (!map.current) return;
 
-    const markers = document.getElementsByClassName('marker')
-    while(markers[0]) {
-      markers[0].parentNode?.removeChild(markers[0])
+    const markers = document.getElementsByClassName('marker');
+    while (markers[0]) {
+      markers[0].parentNode?.removeChild(markers[0]);
     }
 
     inspections.forEach(inspection => {
-      const el = document.createElement('div')
-      el.className = 'marker'
-      el.style.width = '24px'
-      el.style.height = '24px'
-      el.style.borderRadius = '50%'
-      el.style.backgroundColor = '#9333EA'
-      el.style.cursor = 'pointer'
-      el.style.border = '3px solid white'
-      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)'
-
-      new mapboxgl.Marker(el)
-        .setLngLat(inspection.location.coordinates)
-        .addTo(map.current!)
-
-      el.addEventListener('click', () => {
-        setSelectedInspection(inspection)
-      })
-    })
-  }, [inspections])
+      addMarker(inspection);
+    });
+  }, [inspections]);
 
   const addMarker = (inspection: Inspection) => {
-    if (!map.current) return
+    if (!map.current) return;
 
-    const marker = new mapboxgl.Marker({
-      color: '#7c3aed'
-    })
+    const el = document.createElement('div');
+    el.className = 'marker';
+    el.style.width = '24px';
+    el.style.height = '24px';
+    el.style.borderRadius = '50%';
+    el.style.backgroundColor = '#9333EA';
+    el.style.cursor = 'pointer';
+    el.style.border = '3px solid white';
+    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+
+    new mapboxgl.Marker(el)
       .setLngLat(inspection.location.coordinates)
-      .addTo(map.current)
+      .addTo(map.current);
 
-    marker.getElement().addEventListener('click', () => {
-      setSelectedInspection(inspection)
-    })
-  }
+    el.addEventListener('click', () => {
+      setSelectedInspection(inspection);
+    });
+  };
+
+  const handleNewInspection = (newInspection: Omit<Inspection, 'id'>) => {
+    const inspectionWithId: Inspection = {
+      ...newInspection,
+      id: Date.now().toString(),
+      location: {
+        ...newInspection.location,
+        coordinates: currentLocation,
+      },
+    };
+    setInspections(prev => [...prev, inspectionWithId]);
+    addMarker(inspectionWithId);  // Ensure marker is added for the new inspection
+  };
 
   return (
     <div className="relative h-[calc(100vh-4rem)]">
@@ -148,6 +152,5 @@ export function InspectionMap() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
-
