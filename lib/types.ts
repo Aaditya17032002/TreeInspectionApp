@@ -3,9 +3,9 @@ export interface Inspection {
   title: string
   status: 'Pending' | 'In-Progress' | 'Completed'
   location: {
-    address: string
-    postalCode: string
-    coordinates: [number, number]
+    address: string;
+    latitude: number;
+    longitude: number;
   }
   scheduledDate: string
   inspector: {
@@ -28,3 +28,4 @@ export interface User {
   role: 'inspector' | 'admin'
   avatar?: string
 }
+

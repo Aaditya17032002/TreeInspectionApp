@@ -1,4 +1,4 @@
-import { Inspection } from './types'
+import { Inspection } from './types';
 
 export const dummyInspections: Inspection[] = [
   {
@@ -7,8 +7,8 @@ export const dummyInspections: Inspection[] = [
     status: 'Pending',
     location: {
       address: '2327 WALLACE AVENUE',
-      postalCode: '10467',
-      coordinates: [-73.8675, 40.7128]
+      latitude: 40.7128,
+      longitude: -73.8675
     },
     scheduledDate: '2024-01-26T20:30:00.000Z',
     inspector: {
@@ -20,7 +20,8 @@ export const dummyInspections: Inspection[] = [
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T10:00:00.000Z',
     updatedAt: '2024-01-20T10:00:00.000Z',
-    synced: false
+    synced: false,
+    dynamicsId: undefined
   },
   {
     id: '5148441',
@@ -28,8 +29,8 @@ export const dummyInspections: Inspection[] = [
     status: 'In-Progress',
     location: {
       address: '1845 MORRIS AVENUE',
-      postalCode: '10453',
-      coordinates: [-73.8995, 40.7225]
+      latitude: 40.7225,
+      longitude: -73.8995
     },
     scheduledDate: '2024-01-27T15:00:00.000Z',
     inspector: {
@@ -41,7 +42,8 @@ export const dummyInspections: Inspection[] = [
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T11:00:00.000Z',
     updatedAt: '2024-01-20T11:00:00.000Z',
-    synced: false
+    synced: false,
+    dynamicsId: undefined
   },
   {
     id: '5148442',
@@ -49,8 +51,8 @@ export const dummyInspections: Inspection[] = [
     status: 'Pending',
     location: {
       address: '3561 DEKALB AVENUE',
-      postalCode: '10467',
-      coordinates: [-73.8825, 40.7318]
+      latitude: 40.7318,
+      longitude: -73.8825
     },
     scheduledDate: '2024-01-28T14:00:00.000Z',
     inspector: {
@@ -62,7 +64,7 @@ export const dummyInspections: Inspection[] = [
     images: ['/placeholder.svg?height=400&width=400'],
     createdAt: '2024-01-20T12:00:00.000Z',
     updatedAt: '2024-01-20T12:00:00.000Z',
-    synced: false
+    synced: false,
+    dynamicsId: undefined
   }
-]
-
+];

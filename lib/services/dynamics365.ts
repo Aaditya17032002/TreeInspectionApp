@@ -10,8 +10,8 @@ const DYNAMICS_CONFIG = {
   entityName: process.env.DYNAMICS_ENTITY_NAME,
   clientId: process.env.DYNAMICS_CLIENT_ID,
   clientSecret: process.env.DYNAMICS_CLIENT_SECRET,
-  tenantId: process.env.DYNAMICS_TENANT_ID
-}
+  tenantId: process.env.DYNAMICS_TENANT_ID,
+};
 
 class Dynamics365Service {
   private tokenExpiry: number = 0;
@@ -27,15 +27,15 @@ class Dynamics365Service {
       client_id: DYNAMICS_CONFIG.clientId,
       client_secret: DYNAMICS_CONFIG.clientSecret,
       grant_type: 'client_credentials',
-      scope: `${DYNAMICS_CONFIG.url}/.default`
+      scope: `${DYNAMICS_CONFIG.url}/.default`,
     };
 
     try {
       const response = await axios.post(token_url, new URLSearchParams(token_data), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       this.accessToken = response.data.access_token;
-      this.tokenExpiry = Date.now() + (response.data.expires_in * 1000) - 60000; // Adjusting expiry by 1 minute less to ensure token is refreshed before actual expiry
+      this.tokenExpiry = Date.now() + response.data.expires_in * 1000 - 60000;
       return this.accessToken;
     } catch (error) {
       console.error('Error getting Dynamics 365 access token:', error);
@@ -49,7 +49,7 @@ class Dynamics365Service {
       'OData-MaxVersion': '4.0',
       'OData-Version': '4.0',
       Accept: 'application/json',
-    }
+    },
   });
 
   constructor() {
@@ -64,13 +64,12 @@ class Dynamics365Service {
     const { title, id, location, images, status, inspector, details, communityBoard } = inspection;
     const [primaryImage, ...additionalImages] = images;
 
-    const dynamicsInspection = {
+    const dynamicsInspection: Dynamics365InspectionSchema = {
       new_name: title,
       new_offlineid: id,
-      new_latitude: location.coordinates[1],
-      new_longitude: location.coordinates[0],
+      new_latitude: location.latitude,
+      new_longitude: location.longitude,
       new_address: location.address,
-      new_postalcode: location.postalCode,
       new_status: DynamicsStatusMapping[status],
       new_inspectorid: inspector.id,
       new_inspectorname: inspector.name,
@@ -80,7 +79,11 @@ class Dynamics365Service {
       new_additionalimages: additionalImages.join(','),
       new_syncstatus: true,
       new_lastsyncedon: new Date().toISOString(),
-      new_syncattempts: 1
+      new_syncattempts: 1,
+      new_treeinspectionid: '',
+      new_postalcode: '',
+      new_createdon: '',
+      new_modifiedon: ''
     };
 
     try {
@@ -95,7 +98,20 @@ class Dynamics365Service {
   async updateInspection(inspectionId: string, inspection: Partial<Inspection>): Promise<void> {
     try {
       const updateData: Partial<Dynamics365InspectionSchema> = {};
-      // Populate updateData with fields that need to be updated...
+      if (inspection.title) updateData.new_name = inspection.title;
+      if (inspection.status) updateData.new_status = DynamicsStatusMapping[inspection.status];
+      if (inspection.location) {
+        updateData.new_latitude = inspection.location.latitude;
+        updateData.new_longitude = inspection.location.longitude;
+        updateData.new_address = inspection.location.address;
+      }
+      if (inspection.details) updateData.new_description = inspection.details;
+      if (inspection.images) {
+        updateData.new_primaryimageurl = inspection.images[0];
+        updateData.new_additionalimages = inspection.images.slice(1).join(',');
+      }
+      if (inspection.communityBoard) updateData.new_communityboard = inspection.communityBoard;
+
       await this.api.patch(`/${DYNAMICS_CONFIG.entityName}(${inspectionId})`, updateData);
     } catch (error) {
       console.error('Error updating inspection in Dynamics:', error);
@@ -119,9 +135,9 @@ class Dynamics365Service {
       title: item.new_name,
       status: DynamicsStatusReverseMapping[item.new_status],
       location: {
-        coordinates: [item.new_longitude, item.new_latitude],
+        latitude: item.new_latitude,
+        longitude: item.new_longitude,
         address: item.new_address,
-        postalCode: item.new_postalcode,
       },
       scheduledDate: item.new_createdon,
       inspector: {
@@ -134,6 +150,7 @@ class Dynamics365Service {
       createdAt: item.new_createdon,
       updatedAt: item.new_modifiedon,
       synced: item.new_syncstatus,
+      dynamicsId: item.new_treeinspectionid,
     };
   }
 }

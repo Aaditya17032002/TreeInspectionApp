@@ -25,6 +25,7 @@
     "dotenv": "^16.4.7",
     "framer-motion": "^10.12.16",
     "idb": "^7.1.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.244.0",
     "mapbox-gl": "^2.15.0",
     "next": "13.4.7",

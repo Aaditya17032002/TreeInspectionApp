@@ -1,32 +1,40 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope
 
-import { openDB } from 'idb'
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
-import { BackgroundSyncPlugin } from 'workbox-background-sync'
-
-const CACHE_NAME = 'tree-inspection-cache-v1'
-
-// Clean old caches
-cleanupOutdatedCaches()
 
 // Precache static assets
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Cache API responses
+// Cache page navigations (html) with a Network First strategy
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
+  ({ request }) => request.mode === 'navigate',
   new NetworkFirst({
-    cacheName: 'api-cache',
+    cacheName: 'pages',
     plugins: [
       new ExpirationPlugin({
         maxEntries: 50,
-        maxAgeSeconds: 24 * 60 * 60 // 24 hours
-      })
-    ]
+      }),
+    ],
+  })
+)
+
+// Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
+registerRoute(
+  ({ request }) =>
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'worker',
+  new StaleWhileRevalidate({
+    cacheName: 'assets',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 50,
+      }),
+    ],
   })
 )
 
@@ -38,65 +46,43 @@ registerRoute(
     plugins: [
       new ExpirationPlugin({
         maxEntries: 60,
-        maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-      })
-    ]
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+      }),
+    ],
   })
 )
 
-// Cache other static assets
+// Cache API requests with a Network First strategy
 registerRoute(
-  ({ request }) => 
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'font',
-  new StaleWhileRevalidate({
-    cacheName: 'static-resources'
-  })
-)
-
-// Background sync for inspections
-const bgSyncPlugin = new BackgroundSyncPlugin('inspection-sync-queue', {
-  maxRetentionTime: 24 * 60 // Retry for up to 24 hours (specified in minutes)
-})
-
-registerRoute(
-  ({ url }) => url.pathname.includes('/api/inspections'),
+  ({ url }) => url.pathname.startsWith('/api/'),
   new NetworkFirst({
-    cacheName: 'inspections-cache',
-    plugins: [bgSyncPlugin]
-  }),
-  'POST'
+    cacheName: 'api-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 24 * 60 * 60, // 24 hours
+      }),
+    ],
+  })
 )
 
-self.addEventListener('sync', async (event) => {
-  if (event.tag === 'sync-inspections') {
-    const db = await openDB('tree-inspection-db', 1)
-    const pendingSyncs = await db.getAll('pending-syncs')
-    
-    for (const sync of pendingSyncs) {
-      try {
-        const response = await fetch('/api/inspections', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(sync.data),
-        })
-
-        if (response.ok) {
-          await db.delete('pending-syncs', sync.id)
-        }
-      } catch (error) {
-        console.error('Sync failed:', error)
-      }
-    }
+// Fallback to offline page if network request fails
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match('/offline')
+      })
+    )
   }
 })
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting()
-  }
+// Cache the offline page
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open('offline-page').then((cache) => {
+      return cache.add('/offline')
+    })
+  )
 })
 

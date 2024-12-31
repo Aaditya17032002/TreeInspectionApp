@@ -76,8 +76,8 @@ export default function NewInspectionPage() {
     setLoading(true)
     try {
       // Get current location
-      const { coordinates: currentCoordinates } = await getCurrentLocation()
-      const { address, postalCode } = await getAddressFromCoordinates({ coordinates: currentCoordinates })
+      const { latitude, longitude } = await getCurrentLocation()
+      const address = await getAddressFromCoordinates(latitude, longitude)
 
       // Generate inspection ID
       const inspectionId = Math.floor(Math.random() * 9000000) + 1000000
@@ -89,8 +89,8 @@ export default function NewInspectionPage() {
         status: 'Pending',
         location: {
           address,
-          postalCode,
-          coordinates: currentCoordinates,
+          latitude,
+          longitude,
         },
         scheduledDate: new Date().toISOString(),
         inspector: {

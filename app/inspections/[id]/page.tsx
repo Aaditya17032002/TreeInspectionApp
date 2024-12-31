@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '../../../components/ui/button'
-import { ChevronLeft, MapPin, Calendar, User, Building2, FileText, Image } from 'lucide-react'
+import { ChevronLeft, MapPin, Calendar, User, Building2, FileText } from 'lucide-react'
 import { Badge } from '../../../components/ui/badge'
 import { getInspection, updateInspectionStatus, initDB } from '../../../lib/db'
 import { Inspection } from '../../../lib/types'
@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "../../../components/ui/select"
 import { useToast } from "../../../components/ui/use-toast"
-import React from 'react'
 
 export default function InspectionDetailsPage() {
   const params = useParams()
@@ -144,7 +143,7 @@ export default function InspectionDetailsPage() {
               <>
                 {inspection.location.address}
                 <div className="text-sm text-gray-500">
-                  Postal Code: {inspection.location.postalCode}
+                  Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
                 </div>
               </>
             }
@@ -174,7 +173,21 @@ export default function InspectionDetailsPage() {
             value={inspection.details}
             className="whitespace-pre-line"
           />
-          
+          {inspection.images && inspection.images.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-medium text-gray-900 mb-2">Images</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {inspection.images.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`Inspection image ${index + 1}`}
+                    className="w-full h-40 object-cover rounded-lg"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 space-y-4">

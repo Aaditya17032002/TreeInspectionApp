@@ -6,6 +6,7 @@ import { NotificationToast } from '../components/notifications/notification-toas
 import { ProtectedRoute } from '../components/auth/protected-route'
 import { InstallPrompt } from '../components/pwa/install-prompt'
 import { Providers } from './providers'
+import { ServiceWorkerRegister } from './service-worker-register'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -52,6 +53,7 @@ export default function RootLayout({
               <BottomNav />
               <NotificationToast />
               <InstallPrompt />
+              <ServiceWorkerRegister />
             </div>
           </ProtectedRoute>
         </Providers>

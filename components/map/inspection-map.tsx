@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react'
 import { InspectionSheet } from './components/inspection-sheet'
 import { NewInspectionDialog } from './components/new-inspection-dialog'
 import type { Inspection } from '../../lib/types'
+import { getAllInspections, saveInspection } from '../../lib/db'
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiYWRpdHlhMTcwMzIwMDIiLCJhIjoiY201NTk0eGE1MmhsYzJtcHpwZHkxYzI1YSJ9.-crvgtTpoASRfBDF9PvHGA'
 
@@ -17,7 +18,7 @@ export default function InspectionMap() {
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null)
   const [isNewInspectionOpen, setIsNewInspectionOpen] = useState(false)
-  const [currentLocation, setCurrentLocation] = useState<[number, number]>([-73.935242, 40.730610])
+  const [currentLocation, setCurrentLocation] = useState({ longitude: -73.935242, latitude: 40.730610 })
 
   useEffect(() => {
     if (!mapContainer.current || !mapboxgl.accessToken) return
@@ -25,23 +26,34 @@ export default function InspectionMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v11',
-      center: currentLocation,
+      center: [currentLocation.longitude, currentLocation.latitude],
       zoom: 13
     })
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude]
+        const newLocation = { longitude: position.coords.longitude, latitude: position.coords.latitude }
         setCurrentLocation(newLocation)
-        map.current?.flyTo({ center: newLocation })
+        map.current?.flyTo({ center: [newLocation.longitude, newLocation.latitude] })
       },
       (error) => {
         console.error('Error getting location:', error)
       }
     )
 
+    loadInspections()
+
     return () => map.current?.remove()
   }, [])
+
+  const loadInspections = async () => {
+    try {
+      const loadedInspections = await getAllInspections()
+      setInspections(loadedInspections)
+    } catch (error) {
+      console.error('Error loading inspections:', error)
+    }
+  }
 
   useEffect(() => {
     if (!map.current) return
@@ -63,7 +75,7 @@ export default function InspectionMap() {
       el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)'
 
       new mapboxgl.Marker(el)
-        .setLngLat(inspection.location.coordinates)
+        .setLngLat([inspection.location.longitude, inspection.location.latitude])
         .addTo(map.current!)
 
       el.addEventListener('click', () => {
@@ -72,16 +84,19 @@ export default function InspectionMap() {
     })
   }, [inspections])
 
-  const handleNewInspection = (newInspection: Omit<Inspection, "id">) => {
+  const handleNewInspection = async (newInspection: Omit<Inspection, "id">, images: File[]) => {
     const inspectionWithId: Inspection = {
       ...newInspection,
       id: Date.now().toString(),
-      location: {
-        ...newInspection.location,
-        coordinates: currentLocation,
-      },
     }
+    await saveInspection(inspectionWithId, images)
     setInspections(prev => [...prev, inspectionWithId])
+    if (map.current) {
+      map.current.flyTo({
+        center: [inspectionWithId.location.longitude, inspectionWithId.location.latitude],
+        zoom: 15
+      })
+    }
   }
 
   return (
@@ -114,3 +129,4 @@ export default function InspectionMap() {
     </div>
   )
 }
+
