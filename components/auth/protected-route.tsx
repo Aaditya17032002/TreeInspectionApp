@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024) // Changed to 1024px for tablets
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024)
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
@@ -27,11 +27,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        await instance.handleRedirectPromise()
+        
         if (!isAuthenticated && pathname !== '/login') {
-          await instance.handleRedirectPromise().catch(() => {
-            // Ignore redirect promise errors
-          })
-          localStorage.removeItem('isLoggedIn')
           router.push('/login')
         } else if (isAuthenticated && pathname === '/login') {
           router.push('/')

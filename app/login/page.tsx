@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
 import { useToast } from "../../components/ui/use-toast"
-import Image from "next/image"
-import { useIsAuthenticated, useMsal } from "@azure/msal-react"
+import { useMsal, useIsAuthenticated } from "@azure/msal-react"
 import { loginRequest } from "../../lib/msal-config"
-import React from "react"
-import { Scale } from "lucide-react"
+import { Scale } from 'lucide-react'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -21,9 +19,9 @@ export default function LoginPage() {
   useEffect(() => {
     const handleRedirect = async () => {
       try {
-        await instance.handleRedirectPromise()
-        
-        if (isAuthenticated) {
+        const result = await instance.handleRedirectPromise()
+        if (result) {
+          console.log("Redirect handled successfully")
           localStorage.setItem("isLoggedIn", "true")
           router.push("/")
         }
@@ -32,31 +30,34 @@ export default function LoginPage() {
       }
     }
 
-    handleRedirect()
+    if (isAuthenticated) {
+      localStorage.setItem("isLoggedIn", "true")
+      router.push("/")
+    } else {
+      handleRedirect()
+    }
   }, [instance, isAuthenticated, router])
 
   const handleLogin = async () => {
     setLoading(true)
 
     try {
-      const response = await instance.loginPopup(loginRequest)
-      if (response) {
-        localStorage.setItem("isLoggedIn", "true")
-        router.push("/")
+      if (window.innerWidth < 768) {  // Use redirect for mobile devices
+        await instance.loginRedirect(loginRequest)
+      } else {  // Use popup for larger screens
+        const response = await instance.loginPopup(loginRequest)
+        if (response) {
+          localStorage.setItem("isLoggedIn", "true")
+          router.push("/")
+        }
       }
     } catch (error) {
-      console.error('Popup login failed, trying redirect...', error)
-      
-      try {
-        await instance.loginRedirect(loginRequest)
-      } catch (redirectError) {
-        console.error('Login redirect error:', redirectError)
-        toast({
-          title: "Login Failed",
-          description: "An error occurred during login. Please try again.",
-          variant: "destructive",
-        })
-      }
+      console.error('Login error:', error)
+      toast({
+        title: "Login Failed",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -103,3 +104,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
