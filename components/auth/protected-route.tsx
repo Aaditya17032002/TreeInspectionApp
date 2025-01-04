@@ -57,7 +57,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {showNavbar && <BottomNav isMobile={isMobile} />}
+      {showNavbar && <BottomNav isMobile={isMobile} isOpen={false} setIsOpen={function (isOpen: boolean): void {
+        throw new Error('Function not implemented.')
+      } } />}
       <main className={`flex-1 overflow-y-auto ${showNavbar && !isMobile ? 'lg:ml-64' : ''}`}>
         {children}
       </main>
