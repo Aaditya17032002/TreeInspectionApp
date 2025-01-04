@@ -11,6 +11,7 @@ import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
+import { getUserInfo } from '../../../lib/msal-utils'
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -127,6 +128,11 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         return;
       }
 
+      const userInfo = getUserInfo();
+      if (!userInfo) {
+        throw new Error('User information not available');
+      }
+
       const inspection: Omit<Inspection, "id"> = {
         title,
         status: 'Pending',
@@ -137,8 +143,8 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         },
         scheduledDate: new Date().toISOString(),
         inspector: {
-          name: 'Meet Desai',
-          id: 'MD001',
+          name: userInfo.name,
+          id: userInfo.email,
         },
         communityBoard: '211',
         details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
@@ -324,4 +330,3 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
     </>
   )
 }
-
