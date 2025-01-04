@@ -12,13 +12,13 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { instance, accounts } = useMsal()
+  const { instance } = useMsal()
   const isAuthenticated = useIsAuthenticated()
   const [isLoading, setIsLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024) // Changed to 1024px for tablets
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
@@ -55,17 +55,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  if (pathname === '/login') {
-    return <>{children}</>
-  }
+  const showNavbar = isAuthenticated && pathname !== '/login'
 
   return (
-    <>
-      {isAuthenticated && <BottomNav isMobile={isMobile} />}
-      <main className={`${isAuthenticated && !isMobile ? 'md:ml-64' : ''} ${isMobile ? 'pb-16' : ''}`}>
+    <div className="flex h-screen bg-gray-100">
+      {showNavbar && <BottomNav isMobile={isMobile} />}
+      <main className={`flex-1 overflow-y-auto ${showNavbar && !isMobile ? 'lg:ml-64' : ''}`}>
         {children}
       </main>
-    </>
+    </div>
   )
 }
 

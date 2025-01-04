@@ -1,7 +1,6 @@
 import './globals.css'
 import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { BottomNav } from '../components/layout/bottom-nav'
 import { NotificationToast } from '../components/notifications/notification-toast'
 import { ProtectedRoute } from '../components/auth/protected-route'
 import { InstallPrompt } from '../components/pwa/install-prompt'
@@ -48,14 +47,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-              {children}
-              <BottomNav isMobile={false} />
-              <NotificationToast />
-              <InstallPrompt />
-              <ServiceWorkerRegister />
-            </div>
+            {children}
           </ProtectedRoute>
+          <NotificationToast />
+          <InstallPrompt />
+          <ServiceWorkerRegister />
         </Providers>
       </body>
     </html>

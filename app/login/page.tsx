@@ -21,10 +21,8 @@ export default function LoginPage() {
   useEffect(() => {
     const handleRedirect = async () => {
       try {
-        // Handle any redirect promise when the page loads
         await instance.handleRedirectPromise()
         
-        // Check if we're authenticated after handling redirect
         if (isAuthenticated) {
           localStorage.setItem("isLoggedIn", "true")
           router.push("/")
@@ -41,7 +39,6 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Try popup first
       const response = await instance.loginPopup(loginRequest)
       if (response) {
         localStorage.setItem("isLoggedIn", "true")
@@ -50,7 +47,6 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Popup login failed, trying redirect...', error)
       
-      // If popup fails, try redirect
       try {
         await instance.loginRedirect(loginRequest)
       } catch (redirectError) {
@@ -107,4 +103,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
