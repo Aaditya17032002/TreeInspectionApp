@@ -54,19 +54,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   const showNavbar = isAuthenticated && pathname !== '/login';
-  const showHamburger = isAuthenticated && !isMobile;  // Show hamburger only on non-mobile devices
+  const showBottomNav = isAuthenticated && isMobile;  // Show bottom navigation only on mobile devices
+  const showSideNav = isAuthenticated && !isMobile;   // Show side navigation only on non-mobile devices
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
-      {showNavbar && isMobile && <BottomNav isMobile={true} isOpen={false} setIsOpen={function (isOpen: boolean): void {
-        throw new Error('Function not implemented.');
-      } } />}
-      {showNavbar && showHamburger && <BottomNav isMobile={false} isOpen={false} setIsOpen={function (isOpen: boolean): void {
-        throw new Error('Function not implemented.');
-      } } />}
+      {showBottomNav && <BottomNav isMobile={true} isOpen={true} setIsOpen={() => {}} />}
+      {showSideNav && <BottomNav isMobile={false} isOpen={true} setIsOpen={() => {}} />}
     </div>
   );
 }
