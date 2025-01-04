@@ -25,6 +25,8 @@
     "dotenv": "^16.4.7",
     "framer-motion": "^10.12.16",
     "idb": "^7.1.1",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.244.0",
     "mapbox-gl": "^2.15.0",
