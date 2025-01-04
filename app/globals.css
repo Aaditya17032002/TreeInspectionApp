@@ -48,8 +48,8 @@
 }
 
 body {
-  background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  background: hsl(var(--background));
 }
 
 .marker {
@@ -219,5 +219,52 @@ body {
 
 .dark .text-default {
   color: white;
+}
+
+.mapboxgl-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.customUpdateStatus{
+  background-color: #fff;
+}
+
+/* Add these styles to your existing globals.css */
+@media (max-width: 768px) {
+  .dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .dialog-content {
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  /* Improve touch target size */
+  .card {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Visual feedback for touch */
+  .card:active {
+    background-color: hsl(var(--muted));
+  }
+}
+
+/* Add smooth transitions */
+.dialog-content {
+  transition: transform 0.3s ease-out;
+}
+
+.dialog-overlay {
+  transition: background-color 0.3s ease-out;
 }
 

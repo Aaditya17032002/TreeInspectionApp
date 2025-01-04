@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react"
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 
-// Extend jsPDF type to include autoTable
 interface ExtendedJsPDF extends jsPDF {
   lastAutoTable?: {
     finalY: number;
@@ -24,6 +23,16 @@ interface ReportPreviewProps {
 
 export function ReportPreview({ inspection, open, onOpenChange, onDownload }: ReportPreviewProps) {
   const [pdfUrl, setPdfUrl] = useState<string>('')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -43,7 +52,7 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       doc.text(`Report ID: ${inspection.id}`, 20, 30)
 
       // Status Badge
-      doc.setFillColor(102, 45, 145) // Purple color
+      doc.setFillColor(102, 45, 145)
       doc.setDrawColor(102, 45, 145)
       doc.setTextColor(255)
       doc.roundedRect(20, 35, 40, 10, 5, 5, 'FD')
@@ -91,7 +100,6 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
         doc.setFont('helvetica', 'bold')
         doc.text('Inspection Images', 20, imageStartY)
         
-        // Add image thumbnails
         let xPos = 20
         let currentY = imageStartY + 10
         inspection.images.forEach((img, index) => {
@@ -130,7 +138,6 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
         )
       }
 
-      // Generate blob URL for preview
       const pdfBlob = new Blob([doc.output('blob')], { type: 'application/pdf' })
       const url = URL.createObjectURL(pdfBlob)
       setPdfUrl(url)
@@ -145,16 +152,17 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0">
+      <DialogContent className={`${isMobile ? 'w-full h-full max-w-none p-0 rounded-none' : 'max-w-4xl p-0'}`}>
         <div className="sticky top-0 z-50 bg-white border-b p-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">Report Preview</h2>
           <div className="flex gap-2">
             <Button
               onClick={onDownload}
               className="bg-purple-600 hover:bg-purple-700"
+              size={isMobile ? "sm" : "default"}
             >
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
+              <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
+              {!isMobile && "Download PDF"}
             </Button>
             <Button
               variant="ghost"
@@ -166,11 +174,11 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
           </div>
         </div>
 
-        <div className="h-[80vh] bg-gray-50">
+        <div className={`${isMobile ? 'h-[calc(100vh-64px)]' : 'h-[80vh]'} bg-gray-50`}>
           {pdfUrl && (
             <iframe
               src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-              className="w-full h-full select-none"
+              className="w-full h-full"
               style={{
                 pointerEvents: 'none',
                 WebkitUserSelect: 'none',
