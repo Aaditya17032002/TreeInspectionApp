@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
@@ -68,3 +70,4 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     </div>
   );
 }
+
