@@ -18,16 +18,14 @@ const navigation = [
 ]
 
 interface BottomNavProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
   isMobile: boolean;
 }
 
-export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
+export function BottomNav({ isMobile }: BottomNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const { instance } = useMsal()
   const isAuthenticated = useIsAuthenticated()
 
@@ -50,107 +48,84 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
     }
   }
 
-  const NavLinks = () => (
-    <>
-      {navigation.map((item) => {
-        const isActive = pathname === item.href
-        return (
-          <Link
-            key={item.name}
-            href={item.href}
-            onClick={() => setIsSheetOpen(false)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
-              isActive
-                ? 'bg-purple-100 text-purple-600'
-                : 'text-gray-600 hover:bg-gray-100'
-            )}
-          >
-            <item.icon className="h-5 w-5 flex-shrink-0" />
-            {isOpen && <span className="truncate">{item.name}</span>}
-          </Link>
-        )
-      })}
-    </>
-  )
-
-  return (
-    <>
-      {isMobile ? (
-        <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
-          <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
-                <item.icon className="w-5 h-5 mb-2 text-gray-500 dark:text-gray-400" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">{item.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <nav 
-          className={cn(
-            "fixed left-0 top-0 z-40 h-full bg-white border-r shadow-sm transition-all duration-300 ease-in-out",
-            isOpen ? "w-64" : "w-20"
-          )}
-        >
-          <div className="flex justify-end p-4">
-            <button 
-              onClick={() => setIsOpen(!isOpen)} 
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-          <div className="flex flex-col h-[calc(100vh-5rem)] overflow-y-auto px-4 space-y-2">
-            <NavLinks />
-            <button
-              onClick={handleLogout}
+  // Mobile Bottom Navigation
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
+        <div className="grid h-full grid-cols-4 mx-auto"> {/* Changed to 4 columns */}
+          {navigation.slice(0, 3).map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
               className={cn(
-                "mt-auto mb-4 flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg w-full transition-colors",
-                !isOpen && "justify-center"
+                "inline-flex flex-col items-center justify-center",
+                "hover:bg-gray-50 dark:hover:bg-gray-900",
+                pathname === item.href && "text-purple-600 dark:text-purple-400"
               )}
             >
-              <LogOut className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span>Logout</span>}
-            </button>
-          </div>
-        </nav>
-      )}
+              <item.icon className="w-6 h-6" />
+              <span className="text-xs mt-1">{item.name}</span>
+            </Link>
+          ))}
+          <button
+            onClick={handleLogout}
+            className="inline-flex flex-col items-center justify-center text-red-600 dark:text-red-400"
+          >
+            <LogOut className="w-6 h-6" />
+            <span className="text-xs mt-1">Logout</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
 
-      <button
-        className="md:hidden fixed top-4 right-4 z-50 p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        onClick={() => setIsSheetOpen(!isSheetOpen)}
-      >
-        {isSheetOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </button>
+  // Desktop/Tablet Sidebar Navigation
+  return (
+    <nav className={cn(
+      "hidden md:flex fixed left-0 top-0 z-40 h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800",
+      "transition-all duration-300 ease-in-out",
+      isOpen ? "w-64" : "w-20"
+    )}>
+      <div className="flex flex-col h-full">
+        <div className="flex justify-end p-4">
+          <button 
+            onClick={() => setIsOpen(!isOpen)} 
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="left" className="w-64 p-0">
-          <div className="flex flex-col h-full">
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-            </div>
-            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-              <NavLinks />
-            </nav>
-            <div className="p-4 border-t">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 w-full text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-2 px-4 py-3",
+                "hover:bg-gray-100 dark:hover:bg-gray-800",
+                pathname === item.href && "bg-purple-50 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400"
+              )}
+            >
+              <item.icon className="h-6 w-6" />
+              {isOpen && <span>{item.name}</span>}
+            </Link>
+          ))}
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex items-center gap-2 p-4 text-red-600 dark:text-red-400",
+            "hover:bg-red-50 dark:hover:bg-red-900/50",
+            "border-t border-gray-200 dark:border-gray-800"
+          )}
+        >
+          <LogOut className="h-6 w-6" />
+          {isOpen && <span>Logout</span>}
+        </button>
+      </div>
+    </nav>
   )
 }
 

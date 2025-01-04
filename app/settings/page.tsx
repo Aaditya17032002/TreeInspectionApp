@@ -8,7 +8,6 @@ import { Switch } from '../../components/ui/switch'
 import { Button } from '../../components/ui/button'
 import { useTheme } from 'next-themes'
 import { useNotificationStore } from '../../lib/stores/notification-store'
-import React from 'react'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -17,17 +16,23 @@ export default function SettingsPage() {
   const { addNotification } = useNotificationStore()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
-  // Handle hydration
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Check if it's evening/night time (between 6 PM and 6 AM)
+    const hour = new Date().getHours()
+    const shouldBeDark = hour >= 18 || hour < 6
+    
+    // Set initial theme based on time if not already set
+    if (!localStorage.getItem('theme')) {
+      setTheme(shouldBeDark ? 'dark' : 'light')
+    }
+  }, [setTheme])
 
   // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
-
-    setIsOnline(typeof window !== 'undefined' && navigator.onLine)
 
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -40,7 +45,7 @@ export default function SettingsPage() {
 
   // Handle notifications permission
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
+    if ('Notification' in window) {
       setNotificationsEnabled(Notification.permission === 'granted')
     }
   }, [])
@@ -190,3 +195,4 @@ export default function SettingsPage() {
     </main>
   )
 }
+

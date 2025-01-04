@@ -56,13 +56,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const showNavbar = isAuthenticated && pathname !== '/login'
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {showNavbar && <BottomNav isMobile={isMobile} isOpen={false} setIsOpen={function (isOpen: boolean): void {
-        throw new Error('Function not implemented.')
-      } } />}
-      <main className={`flex-1 overflow-y-auto ${showNavbar && !isMobile ? 'lg:ml-64' : ''}`}>
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      {showNavbar && isMobile && <BottomNav isMobile={false} />}
     </div>
   )
 }
