@@ -1,7 +1,9 @@
+'use client'
+
 import './globals.css'
 import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ToastContainer } from '../components/ui/toast'
+import { Toaster } from '../components/ui/toast'
 import { ProtectedRoute } from '../components/auth/protected-route'
 import { InstallPrompt } from '../components/pwa/install-prompt'
 import { Providers } from './providers'
@@ -49,7 +51,7 @@ export default function RootLayout({
           <ProtectedRoute>
             {children}
           </ProtectedRoute>
-          <ToastContainer />
+          <Toaster />
           <InstallPrompt />
           <ServiceWorkerRegister />
         </Providers>
