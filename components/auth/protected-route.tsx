@@ -16,9 +16,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const isAuthenticated = useIsAuthenticated();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSideNavOpen, setIsSideNavOpen] = useState(true);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -54,17 +55,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   const showNavbar = isAuthenticated && pathname !== '/login';
-  const showBottomNav = isAuthenticated && isMobile;  // Show bottom navigation only on mobile devices
-  const showSideNav = isAuthenticated && !isMobile;   // Show side navigation only on non-mobile devices
+  const showBottomNav = showNavbar && isMobile;
+  const showSideNav = showNavbar && !isMobile;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <main className="flex-1 overflow-y-auto">
+      <main className={`flex-1 overflow-y-auto ${showSideNav ? 'md:ml-20 lg:ml-64' : ''}`}>
         {children}
       </main>
       {showBottomNav && <BottomNav isMobile={true} isOpen={true} setIsOpen={() => {}} />}
-      {showSideNav && <BottomNav isMobile={false} isOpen={true} setIsOpen={() => {}} />}
+      {showSideNav && (
+        <BottomNav
+          isMobile={false}
+          isOpen={isSideNavOpen}
+          setIsOpen={setIsSideNavOpen}
+        />
+      )}
     </div>
   );
 }
-
