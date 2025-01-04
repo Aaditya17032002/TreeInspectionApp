@@ -1,4 +1,4 @@
-import { Configuration, PopupRequest } from "@azure/msal-browser"
+import { Configuration, PopupRequest, PublicClientApplication } from "@azure/msal-browser"
 
 export const msalConfig: Configuration = {
   auth: {
@@ -25,3 +25,5 @@ export const loginRequest: PopupRequest = {
   prompt: "select_account"
 }
 
+
+export const msalInstance = new PublicClientApplication(msalConfig);
