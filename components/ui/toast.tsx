@@ -2,6 +2,7 @@ import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import { cn } from "../../lib/utils"
 
@@ -124,5 +125,57 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
+}
+
+// New component for managing toasts
+export const Toaster: React.FC = () => {
+  const [toasts, setToasts] = React.useState<ToastProps[]>([])
+
+  const addToast = (toast: ToastProps) => {
+    setToasts((prev) => [...prev, toast])
+    setTimeout(() => {
+      removeToast(toast)
+    }, 3000)
+  }
+
+  const removeToast = (toast: ToastProps) => {
+    setToasts((prev) => prev.filter((t) => t !== toast))
+  }
+
+  return (
+    <ToastProvider>
+      <AnimatePresence>
+        {toasts.map((toast, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 300 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.x > 100) {
+                removeToast(toast)
+              }
+            }}
+          >
+            <Toast {...toast} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+      <ToastViewport />
+    </ToastProvider>
+  )
+}
+
+// Hook for using toasts
+export const useToast = () => {
+  const [, setToasts] = React.useState<ToastProps[]>([])
+
+  const toast = (props: ToastProps) => {
+    setToasts((prev) => [...prev, props])
+  }
+
+  return { toast }
 }
 

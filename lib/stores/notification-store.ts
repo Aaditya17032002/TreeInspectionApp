@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface Notification {
   id: string
@@ -15,23 +16,30 @@ interface NotificationStore {
   clearNotifications: () => void
 }
 
-export const useNotificationStore = create<NotificationStore>((set) => ({
-  notifications: [],
-  addNotification: (notification) =>
-    set((state) => ({
-      notifications: [
-        {
-          ...notification,
-          id: Math.random().toString(36).substring(7),
-          createdAt: new Date(),
-        },
-        ...state.notifications,
-      ],
-    })),
-  removeNotification: (id) =>
-    set((state) => ({
-      notifications: state.notifications.filter((n) => n.id !== id),
-    })),
-  clearNotifications: () => set({ notifications: [] }),
-}))
+export const useNotificationStore = create<NotificationStore>()(
+  persist(
+    (set) => ({
+      notifications: [],
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [
+            {
+              ...notification,
+              id: Math.random().toString(36).substring(7),
+              createdAt: new Date(),
+            },
+            ...state.notifications,
+          ],
+        })),
+      removeNotification: (id) =>
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n.id !== id),
+        })),
+      clearNotifications: () => set({ notifications: [] }),
+    }),
+    {
+      name: 'notification-storage',
+    }
+  )
+)
 

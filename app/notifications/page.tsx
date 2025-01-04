@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Bell, CheckCircle2, Clock } from 'lucide-react'
+import { useEffect } from 'react'
+import { Bell, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
 import { Card } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { ScrollArea } from '../../components/ui/scroll-area'
@@ -46,6 +46,9 @@ export default function NotificationsPage() {
                   )}
                   {notification.type === 'info' && (
                     <Bell className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                  )}
+                  {notification.type === 'error' && (
+                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
                   )}
                   <div className="space-y-1 flex-1">
                     <p className="font-medium">{notification.title}</p>
