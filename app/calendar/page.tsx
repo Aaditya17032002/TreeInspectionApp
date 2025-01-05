@@ -74,6 +74,7 @@ export default function CalendarPage() {
         description: 'Inspection scheduled and added to calendar',
       })
       await loadInspections()
+      setIsScheduleOpen(false)
     } catch (error) {
       console.error('Error scheduling inspection:', error)
       toast({
@@ -85,10 +86,10 @@ export default function CalendarPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto max-w-4xl">
-        <CalendarHeader onSchedule={() => setIsScheduleOpen(true)} />
-        <div className="mx-4 mb-4">
+    <main className="min-h-screen bg-background">
+      <div className="container mx-auto py-4">
+        <CalendarHeader />
+        <div className="mx-auto max-w-2xl px-4">
           <Calendar
             inspections={inspections}
             onSelectDate={setSelectedDate}
@@ -108,8 +109,10 @@ export default function CalendarPage() {
               selectedDate?.toDateString()
           )}
           onClose={() => setSelectedDate(null)}
+          onSchedule={() => setIsScheduleOpen(true)}
         />
       </div>
     </main>
   )
 }
+

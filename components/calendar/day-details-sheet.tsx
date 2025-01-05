@@ -3,7 +3,7 @@
 import { Sheet, SheetContent, SheetHeader } from '../../components/ui/sheet'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Calendar, MapPin, Clock, X, Share2, Plus } from 'lucide-react'
+import { CalendarIcon, MapPin, Clock, X, Share2, Plus } from 'lucide-react'
 import { Inspection } from '../../lib/types'
 import { format } from 'date-fns'
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
@@ -12,12 +12,14 @@ interface DayDetailsSheetProps {
   date: Date | null
   inspections: Inspection[]
   onClose: () => void
+  onSchedule: () => void
 }
 
 export function DayDetailsSheet({
   date,
   inspections,
   onClose,
+  onSchedule,
 }: DayDetailsSheetProps) {
   if (!date) return null
 
@@ -25,31 +27,32 @@ export function DayDetailsSheet({
     <Sheet open={!!date} onOpenChange={() => onClose()}>
       <SheetContent
         side="bottom"
-        className="h-[90vh] p-0 rounded-t-3xl overflow-hidden"
+        className="h-[90vh] sm:h-[85vh] p-0 rounded-t-3xl overflow-hidden"
       >
         <div className="flex flex-col h-full">
           <SheetHeader className="p-6 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="bg-orange-500 text-white p-3 rounded-2xl">
-                  <Calendar className="h-6 w-6" />
+                <div className="bg-primary/10 text-primary-foreground p-3 rounded-2xl">
+                  <CalendarIcon className="h-6 w-6" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">
                     {format(date, 'MMMM d, yyyy')}
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {inspections.length} inspections scheduled
                   </p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full"
+                  variant="default"
+                  onClick={onSchedule}
+                  className="rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule
                 </Button>
                 <Button
                   variant="ghost"
@@ -59,38 +62,42 @@ export function DayDetailsSheet({
                 >
                   <X className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="default"
-                  onClick={() => window.location.href = '/calendar/schedule'}
-                  className="rounded-full bg-primary/20 text-primary hover:bg-primary/30 dark:bg-primary/30 dark:text-primary-foreground dark:hover:bg-primary/40"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule
-                </Button>
               </div>
             </div>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {inspections.length === 0 ? (
-              <p className="text-center text-muted-foreground">
-                No inspections scheduled for this day
-              </p>
+              <div className="text-center py-12">
+                <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <p className="mt-4 text-lg font-medium">No inspections scheduled</p>
+                <p className="mt-2 text-muted-foreground">
+                  Schedule an inspection for this day
+                </p>
+                <Button
+                  variant="default"
+                  onClick={onSchedule}
+                  className="mt-6 rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule Inspection
+                </Button>
+              </div>
             ) : (
               inspections.map((inspection) => (
                 <div
                   key={inspection.id}
-                  className="bg-gray-50 rounded-2xl p-6 space-y-4"
+                  className="bg-muted/50 rounded-2xl p-6 space-y-4"
                 >
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold">{inspection.title}</h3>
                       <div className="mt-2 space-y-2">
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-4 w-4" />
                           {format(new Date(inspection.scheduledDate), 'h:mm a')}
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-muted-foreground">
                           <MapPin className="h-4 w-4" />
                           {inspection.location.address}
                         </div>
@@ -109,15 +116,14 @@ export function DayDetailsSheet({
                   </div>
 
                   {inspection.details && (
-                    <p className="text-gray-600 text-sm">{inspection.details}</p>
+                    <p className="text-muted-foreground text-sm">{inspection.details}</p>
                   )}
 
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex -space-x-2">
-                      <Avatar className="border-2 border-white">
-                        <AvatarImage src="/placeholder-avatar.jpg" />
-                        <AvatarFallback>
-                          {inspection.inspector.name[0]}
+                      <Avatar className="border-2 border-background">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -140,3 +146,4 @@ export function DayDetailsSheet({
     </Sheet>
   )
 }
+

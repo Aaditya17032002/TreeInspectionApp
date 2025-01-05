@@ -23,8 +23,10 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 215 20.2% 65.1%;
   --radius: 0.5rem;
-  --primary: 262 59% 76%;
-  --primary-foreground: 262 59% 16%;
+  --pastel-purple: 262, 80%, 85%;
+  --pastel-purple-dark: 262, 80%, 75%;
+  --primary: var(--pastel-purple);
+  --primary-foreground: 262, 80%, 25%;
 }
 
 .dark {
@@ -47,8 +49,8 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 212.7 26.8% 83.9%;
-  --primary: 262 59% 76%;
-  --primary-foreground: 262 59% 16%;
+  --primary: var(--pastel-purple-dark);
+  --primary-foreground: 262, 80%, 95%;
 }
 
 body {

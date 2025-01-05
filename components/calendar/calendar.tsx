@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreVertical, Circle } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { cn } from '../../lib/utils'
 import { Inspection } from '../../lib/types'
@@ -47,41 +47,47 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
     )
   }
 
+  const hasInspections = (date: Date) => {
+    return getInspectionsForDate(date).length > 0
+  }
+
   return (
-    <div className="flex flex-col h-full bg-background dark:bg-gray-900 rounded-3xl overflow-hidden">
+    <div className="flex flex-col h-full bg-background dark:bg-gray-900 rounded-3xl overflow-hidden max-w-2xl mx-auto">
       {/* Calendar Header */}
-      <div className="bg-primary/20 dark:bg-primary/30 p-6 text-primary-foreground">
+      <div className="bg-primary/10 dark:bg-primary/20 p-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={previousMonth}
-              className="text-primary hover:bg-primary/20 dark:text-primary-foreground dark:hover:bg-primary/40"
+              className="text-primary-foreground hover:bg-primary/10"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl font-bold text-primary-foreground">
               {currentDate.toLocaleString('default', { month: 'long' })}
             </h2>
             <Button
               variant="ghost"
               size="icon"
               onClick={nextMonth}
-              className="text-primary hover:bg-primary/20 dark:text-primary-foreground dark:hover:bg-primary/40"
+              className="text-primary-foreground hover:bg-primary/10"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          <Avatar>
-            <AvatarFallback>{currentUser.initials}</AvatarFallback>
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              {currentUser.initials}
+            </AvatarFallback>
           </Avatar>
         </div>
 
         {/* Week Days */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="text-center text-sm font-medium opacity-90">
+            <div key={day} className="text-center text-sm font-medium text-primary-foreground/70">
               {day}
             </div>
           ))}
@@ -99,20 +105,28 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
             )
             const isToday = isCurrentMonth && date.toDateString() === new Date().toDateString()
             const isSelected = isCurrentMonth && date.getDate() === currentDate.getDate()
+            const hasInspectionsOnDate = isCurrentMonth && hasInspections(date)
 
             return (
               <button
                 key={i}
                 className={cn(
-                  'aspect-square rounded-full flex items-center justify-center text-sm transition-colors',
-                  isCurrentMonth ? 'hover:bg-white/20' : 'text-white/40',
+                  'relative aspect-square rounded-full flex items-center justify-center text-sm transition-colors',
+                  isCurrentMonth ? 'hover:bg-primary/20' : 'text-primary-foreground/30',
                   isSelected ? 'bg-primary text-primary-foreground' : '',
-                  isToday && !isSelected ? 'border-2 border-white' : ''
+                  isToday && !isSelected ? 'border-2 border-primary' : ''
                 )}
                 onClick={() => isCurrentMonth && onSelectDate(date)}
                 disabled={!isCurrentMonth}
               >
-                {isCurrentMonth ? dayNumber : ''}
+                {isCurrentMonth && (
+                  <>
+                    <span>{dayNumber}</span>
+                    {hasInspectionsOnDate && (
+                      <Circle className="absolute bottom-1 h-1.5 w-1.5 fill-primary" />
+                    )}
+                  </>
+                )}
               </button>
             )
           })}
@@ -147,7 +161,9 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
             <div className="mt-4 flex items-center justify-between">
               <div className="flex -space-x-2">
                 <Avatar className="border-2 border-white h-8 w-8">
-                  <AvatarFallback>{inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
               </div>
               <Badge
@@ -163,3 +179,4 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
     </div>
   )
 }
+
