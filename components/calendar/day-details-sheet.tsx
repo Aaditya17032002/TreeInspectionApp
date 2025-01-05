@@ -1,18 +1,21 @@
 'use client'
 
+import { useState } from 'react'
 import { Sheet, SheetContent } from '../../components/ui/sheet'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { CalendarIcon, MapPin, Clock, X, Plus } from 'lucide-react'
+import { CalendarIcon, MapPin, Clock, Plus } from 'lucide-react'
 import { Inspection } from '../../lib/types'
 import { format } from 'date-fns'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
+import { cn } from '../../lib/utils'
+import { ScheduleDialog } from './schedule-dialog'
 
 interface DayDetailsSheetProps {
   date: Date | null
   inspections: Inspection[]
   onClose: () => void
-  onSchedule: () => void
+  onSchedule: () => void // Updated type to match the callback
 }
 
 export function DayDetailsSheet({
@@ -21,7 +24,26 @@ export function DayDetailsSheet({
   onClose,
   onSchedule,
 }: DayDetailsSheetProps) {
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
+
   if (!date) return null
+
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-[#C1E1C1] dark:bg-[#7FB37F] text-green-800 dark:text-green-100'
+      case 'Pending':
+        return 'bg-[#FFD6D6] dark:bg-[#B37F7F] text-red-800 dark:text-red-100'
+      case 'In-Progress':
+        return 'bg-[#FFE4C4] dark:bg-[#B39B7F] text-orange-800 dark:text-orange-100'
+      default:
+        return 'bg-secondary text-secondary-foreground'
+    }
+  }
+
+  const handleScheduleClick = () => {
+    onSchedule()
+  }
 
   return (
     <Sheet open={!!date} onOpenChange={() => onClose()}>
@@ -46,18 +68,10 @@ export function DayDetailsSheet({
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onClose()}
-                  className="rounded-full"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
               <Button
                 variant="default"
-                onClick={onSchedule}
+                onClick={handleScheduleClick}
                 className="w-full rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -95,12 +109,10 @@ export function DayDetailsSheet({
                         </div>
                       </div>
                       <Badge
-                        variant={
-                          inspection.status === 'Completed'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        className="rounded-full"
+                        className={cn(
+                          "rounded-full font-medium",
+                          getStatusStyles(inspection.status)
+                        )}
                       >
                         {inspection.status}
                       </Badge>

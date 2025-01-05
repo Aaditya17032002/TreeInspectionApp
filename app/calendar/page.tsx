@@ -109,6 +109,10 @@ export default function CalendarPage() {
     }
   }
 
+  const handleOpenSchedule = () => {
+    setIsScheduleOpen(true)
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto py-4">
@@ -124,6 +128,7 @@ export default function CalendarPage() {
           open={isScheduleOpen}
           onOpenChange={setIsScheduleOpen}
           onSchedule={handleSchedule}
+          initialDate={selectedDate}
         />
         <DayDetailsSheet
           date={selectedDate}
@@ -133,7 +138,7 @@ export default function CalendarPage() {
               selectedDate?.toDateString()
           )}
           onClose={() => setSelectedDate(null)}
-          onSchedule={() => setIsScheduleOpen(true)}
+          onSchedule={handleOpenSchedule}
         />
       </div>
     </main>

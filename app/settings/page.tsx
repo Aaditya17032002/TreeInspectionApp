@@ -10,34 +10,69 @@ import { useTheme } from 'next-themes'
 import { useNotificationStore } from '../../lib/stores/notification-store'
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, systemTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' && navigator.onLine)
   const { addNotification } = useNotificationStore()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [isSystemTheme, setIsSystemTheme] = useState(true)
 
   useEffect(() => {
     setMounted(true)
     
-    // Check system preference for dark mode
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    // Set initial theme based on system preference if not already set
-    if (!localStorage.getItem('theme')) {
+    // Check if user has manually set a theme preference
+    const userTheme = localStorage.getItem('theme')
+    setIsSystemTheme(!userTheme)
+
+    // Initialize theme based on system preference if no user preference exists
+    if (!userTheme) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       setTheme(prefersDark ? 'dark' : 'light')
     }
 
     // Listen for changes in system color scheme
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('theme')) {
+      if (isSystemTheme) {
         setTheme(e.matches ? 'dark' : 'light')
       }
     }
-    mediaQuery.addListener(handleChange)
 
-    return () => mediaQuery.removeListener(handleChange)
-  }, [setTheme])
+    // Modern event listener syntax
+    try {
+      // Modern browsers
+      mediaQuery.addEventListener('change', handleChange)
+    } catch (e1) {
+      try {
+        // Fallback for older browsers
+        mediaQuery.addListener(handleChange)
+      } catch (e2) {
+        console.error('Could not add theme change listener:', e2)
+      }
+    }
+
+    return () => {
+      try {
+        // Modern browsers
+        mediaQuery.removeEventListener('change', handleChange)
+      } catch (e1) {
+        try {
+          // Fallback for older browsers
+          mediaQuery.removeListener(handleChange)
+        } catch (e2) {
+          console.error('Could not remove theme change listener:', e2)
+        }
+      }
+    }
+  }, [setTheme, isSystemTheme])
+
+  // Sync with system theme when mounted and in system theme mode
+  useEffect(() => {
+    if (mounted && isSystemTheme) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      setTheme(prefersDark ? 'dark' : 'light')
+    }
+  }, [mounted, isSystemTheme, setTheme])
 
   // Handle online/offline status
   useEffect(() => {
@@ -59,6 +94,14 @@ export default function SettingsPage() {
       setNotificationsEnabled(Notification.permission === 'granted')
     }
   }, [])
+
+  const handleThemeChange = (checked: boolean) => {
+    const newTheme = checked ? 'dark' : 'light'
+    setTheme(newTheme)
+    // Store user preference
+    localStorage.setItem('theme', newTheme)
+    setIsSystemTheme(false)
+  }
 
   const handleNotificationToggle = async (checked: boolean) => {
     if (!('Notification' in window)) {
@@ -124,6 +167,8 @@ export default function SettingsPage() {
     return null
   }
 
+  const currentTheme = theme === 'system' ? systemTheme : theme
+
   return (
     <main className="pb-16 md:pb-0">
       <header className="border-b p-4 bg-white dark:bg-gray-800 sticky top-0 z-10">
@@ -138,7 +183,7 @@ export default function SettingsPage() {
           <h2 className="font-medium mb-4">Appearance</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {theme === 'dark' ? (
+              {currentTheme === 'dark' ? (
                 <Moon className="h-4 w-4" />
               ) : (
                 <Sun className="h-4 w-4" />
@@ -147,11 +192,8 @@ export default function SettingsPage() {
             </div>
             <Switch
               id="dark-mode"
-              checked={theme === 'dark'}
-              onCheckedChange={(checked) => {
-                setTheme(checked ? 'dark' : 'light')
-                localStorage.setItem('theme', checked ? 'dark' : 'light')
-              }}
+              checked={currentTheme === 'dark'}
+              onCheckedChange={handleThemeChange}
             />
           </div>
         </Card>

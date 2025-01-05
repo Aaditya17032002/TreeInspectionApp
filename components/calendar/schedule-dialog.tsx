@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CalendarIcon, X } from 'lucide-react'
-import { format, addHours } from 'date-fns'
+import { format, addHours, setHours, setMinutes } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -14,24 +14,74 @@ import { cn } from '../../lib/utils'
 import { Inspection } from '../../lib/types'
 import { addToOutlookCalendar } from '../../lib/services/microsoft-calendar'
 import { useToast } from '../../components/ui/use-toast'
+import { msalInstance } from '../../lib/msal-config'
 
 interface ScheduleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSchedule: (inspection: Omit<Inspection, 'id' | 'images'>) => Promise<void>
+  initialDate?: Date
 }
 
 export function ScheduleDialog({
   open,
   onOpenChange,
   onSchedule,
+  initialDate
 }: ScheduleDialogProps) {
   const [title, setTitle] = useState('')
-  const [date, setDate] = useState<Date>()
+  const [date, setDate] = useState<Date | undefined>(initialDate)
   const [location, setLocation] = useState('')
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
+  const [microsoftAuthChecked, setMicrosoftAuthChecked] = useState(false)
   const { toast } = useToast()
+
+  // Update date when initialDate changes
+  useEffect(() => {
+    if (initialDate) {
+      setDate(initialDate)
+    }
+  }, [initialDate])
+
+  // Check Microsoft authentication status
+  useEffect(() => {
+    if (open && !microsoftAuthChecked) {
+      const accounts = msalInstance.getAllAccounts()
+      if (accounts.length === 0) {
+        toast({
+          title: "Microsoft Calendar",
+          description: "Sign in to Microsoft to sync with Outlook Calendar",
+          variant: "default",
+        })
+      }
+      setMicrosoftAuthChecked(true)
+    }
+  }, [open, microsoftAuthChecked, toast])
+
+  const handleMicrosoftLogin = async () => {
+    try {
+      await msalInstance.loginPopup({
+        scopes: ['Calendars.ReadWrite']
+      })
+      toast({
+        title: "Success",
+        description: "Successfully connected to Microsoft Calendar",
+      })
+    } catch (error) {
+      console.error('Microsoft login failed:', error)
+      toast({
+        title: "Error",
+        description: "Failed to connect to Microsoft Calendar",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const getScheduledDateTime = (selectedDate: Date) => {
+    // Set default time to 9:00 AM
+    return setMinutes(setHours(selectedDate, 9), 0)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +89,7 @@ export function ScheduleDialog({
 
     setLoading(true)
     try {
+      const scheduledDateTime = getScheduledDateTime(date)
       const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
         status: 'Pending' as const,
@@ -47,7 +98,7 @@ export function ScheduleDialog({
           latitude: 0,
           longitude: 0,
         },
-        scheduledDate: date.toISOString(),
+        scheduledDate: scheduledDateTime.toISOString(),
         inspector: {
           name: 'Current User',
           id: 'current-user-id',
@@ -59,40 +110,47 @@ export function ScheduleDialog({
         synced: true,
       }
 
+      // Try to add to Microsoft Calendar first
+      const accounts = msalInstance.getAllAccounts()
+      if (accounts.length > 0) {
+        try {
+          await addToOutlookCalendar({
+            subject: title,
+            start: {
+              dateTime: scheduledDateTime.toISOString(),
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            },
+            end: {
+              dateTime: addHours(scheduledDateTime, 1).toISOString(),
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            },
+            location: {
+              displayName: location,
+            },
+            body: {
+              contentType: 'text',
+              content: details || 'No additional details provided.',
+            },
+          })
+        } catch (error) {
+          console.error('Failed to add to Microsoft Calendar:', error)
+          toast({
+            title: "Warning",
+            description: "Failed to sync with Microsoft Calendar. The inspection will still be scheduled.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      // Schedule the inspection in our system
       await onSchedule(inspection)
 
-      // Add to Outlook Calendar
-      try {
-        await addToOutlookCalendar({
-          subject: title,
-          start: {
-            dateTime: date.toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          },
-          end: {
-            dateTime: addHours(date, 1).toISOString(),
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          },
-          location: {
-            displayName: location,
-          },
-          body: {
-            contentType: 'text',
-            content: details,
-          },
-        })
-        toast({
-          title: "Success",
-          description: "Inspection scheduled and added to Outlook Calendar",
-        })
-      } catch (error) {
-        console.error('Error adding to Outlook Calendar:', error)
-        toast({
-          title: "Warning",
-          description: "Inspection scheduled, but failed to add to Outlook Calendar",
-          variant: "destructive",
-        })
-      }
+      toast({
+        title: "Success",
+        description: accounts.length > 0 
+          ? "Inspection scheduled and synced with Microsoft Calendar"
+          : "Inspection scheduled successfully",
+      })
 
       onOpenChange(false)
       setTitle('')
@@ -185,6 +243,25 @@ export function ScheduleDialog({
               className="min-h-[100px] rounded-xl"
             />
           </div>
+          
+          {/* Microsoft Calendar Integration */}
+          {msalInstance.getAllAccounts().length === 0 && (
+            <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
+              <div className="text-sm">
+                <p className="font-medium">Microsoft Calendar</p>
+                <p className="text-muted-foreground">Sync with Outlook Calendar</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleMicrosoftLogin}
+                className="rounded-xl"
+              >
+                Connect
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <Button
               type="button"
