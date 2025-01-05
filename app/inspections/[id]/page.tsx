@@ -27,7 +27,6 @@ export default function InspectionDetailsPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [currentAddress, setCurrentAddress] = useState<string>('')
   const { toast } = useToast()
-  
 
   useEffect(() => {
     const loadInspection = async () => {
@@ -192,13 +191,13 @@ export default function InspectionDetailsPage() {
                 <h3 className="font-medium text-gray-900 mb-2">Images</h3>
                 <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
                   {inspection.images.map((img, index) => (
-                    <div
+                    <div 
                       key={index}
                       className="relative cursor-pointer"
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img
-                        src={img}
+                        src={`data:image/jpeg;base64,${img}`}
                         alt={`Inspection image ${index + 1}`}
                         className="w-full h-40 object-cover rounded-lg hover:opacity-90 transition-opacity"
                       />
@@ -243,12 +242,12 @@ export default function InspectionDetailsPage() {
   )
 }
 
-function InfoItem({
-  icon: Icon,
-  label,
-  value,
-  className
-}: {
+function InfoItem({ 
+  icon: Icon, 
+  label, 
+  value, 
+  className 
+}: { 
   icon: any
   label: string
   value: React.ReactNode
