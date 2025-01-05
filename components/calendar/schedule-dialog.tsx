@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, X } from 'lucide-react'
 import { format } from 'date-fns'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
@@ -19,7 +19,11 @@ interface ScheduleDialogProps {
   onSchedule: (inspection: Omit<Inspection, 'id' | 'images'>) => Promise<void>
 }
 
-export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialogProps) {
+export function ScheduleDialog({
+  open,
+  onOpenChange,
+  onSchedule,
+}: ScheduleDialogProps) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState<Date>()
   const [location, setLocation] = useState('')
@@ -51,7 +55,6 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
         updatedAt: new Date().toISOString(),
         synced: true,
       })
-      
       onOpenChange(false)
       setTitle('')
       setDate(undefined)
@@ -64,11 +67,21 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Schedule Inspection</DialogTitle>
+      <DialogContent className="sm:max-w-[425px] rounded-3xl p-0 overflow-hidden">
+        <DialogHeader className="p-6 bg-primary/20 dark:bg-primary/30 text-primary-foreground">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Schedule Inspection</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="rounded-full text-white hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -76,10 +89,10 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter inspection title"
+              className="rounded-xl"
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label>Date</Label>
             <Popover>
@@ -87,7 +100,7 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full justify-start text-left font-normal',
+                    'w-full justify-start text-left font-normal rounded-xl',
                     !date && 'text-muted-foreground'
                   )}
                 >
@@ -105,7 +118,6 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
               </PopoverContent>
             </Popover>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
             <Input
@@ -113,10 +125,10 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Enter location"
+              className="rounded-xl"
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="details">Details</Label>
             <Textarea
@@ -124,20 +136,23 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               placeholder="Enter inspection details"
-              className="min-h-[100px]"
+              className="min-h-[100px] rounded-xl"
             />
           </div>
-
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 rounded-xl"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1" disabled={loading}>
+            <Button
+              type="submit"
+              className="flex-1 rounded-xl bg-primary/20 text-primary hover:bg-primary/30 dark:bg-primary/30 dark:text-primary-foreground dark:hover:bg-primary/40"
+              disabled={loading}
+            >
               {loading ? 'Scheduling...' : 'Schedule'}
             </Button>
           </div>
@@ -146,4 +161,3 @@ export function ScheduleDialog({ open, onOpenChange, onSchedule }: ScheduleDialo
     </Dialog>
   )
 }
-

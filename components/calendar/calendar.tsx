@@ -1,18 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { cn } from '../../lib/utils'
 import { Inspection } from '../../lib/types'
 import { Badge } from '../../components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
+import { format } from 'date-fns'
 
 interface CalendarProps {
   inspections: Inspection[]
   onSelectDate: (date: Date) => void
+  currentUser: { name: string; email: string; initials: string }
 }
 
-export function Calendar({ inspections, onSelectDate }: CalendarProps) {
+export function Calendar({ inspections, onSelectDate, currentUser }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const daysInMonth = new Date(
@@ -27,7 +30,6 @@ export function Calendar({ inspections, onSelectDate }: CalendarProps) {
     1
   ).getDay()
 
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const weeks = Math.ceil((daysInMonth + firstDayOfMonth) / 7)
 
   const previousMonth = () => {
@@ -45,88 +47,119 @@ export function Calendar({ inspections, onSelectDate }: CalendarProps) {
     )
   }
 
-  const getStatusColor = (status: Inspection['status']) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-500'
-      case 'In-Progress':
-        return 'bg-blue-500'
-      default:
-        return 'bg-purple-500'
-    }
-  }
-
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">
-          {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-        </h2>
-        <div className="flex gap-1">
-          <Button variant="outline" size="icon" onClick={previousMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={nextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+    <div className="flex flex-col h-full bg-background dark:bg-gray-900 rounded-3xl overflow-hidden">
+      {/* Calendar Header */}
+      <div className="bg-primary/20 dark:bg-primary/30 p-6 text-primary-foreground">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={previousMonth}
+              className="text-primary hover:bg-primary/20 dark:text-primary-foreground dark:hover:bg-primary/40"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-2xl font-bold">
+              {currentDate.toLocaleString('default', { month: 'long' })}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextMonth}
+              className="text-primary hover:bg-primary/20 dark:text-primary-foreground dark:hover:bg-primary/40"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+          <Avatar>
+            <AvatarFallback>{currentUser.initials}</AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Week Days */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <div key={day} className="text-center text-sm font-medium opacity-90">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Days */}
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: weeks * 7 }, (_, i) => {
+            const dayNumber = i - firstDayOfMonth + 1
+            const isCurrentMonth = dayNumber > 0 && dayNumber <= daysInMonth
+            const date = new Date(
+              currentDate.getFullYear(),
+              currentDate.getMonth(),
+              dayNumber
+            )
+            const isToday = isCurrentMonth && date.toDateString() === new Date().toDateString()
+            const isSelected = isCurrentMonth && date.getDate() === currentDate.getDate()
+
+            return (
+              <button
+                key={i}
+                className={cn(
+                  'aspect-square rounded-full flex items-center justify-center text-sm transition-colors',
+                  isCurrentMonth ? 'hover:bg-white/20' : 'text-white/40',
+                  isSelected ? 'bg-primary text-primary-foreground' : '',
+                  isToday && !isSelected ? 'border-2 border-white' : ''
+                )}
+                onClick={() => isCurrentMonth && onSelectDate(date)}
+                disabled={!isCurrentMonth}
+              >
+                {isCurrentMonth ? dayNumber : ''}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+      {/* Inspections List */}
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+        {getInspectionsForDate(currentDate).map((inspection) => (
           <div
-            key={day}
-            className="bg-card p-2 text-center text-sm font-medium text-muted-foreground"
+            key={inspection.id}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm"
           >
-            {day}
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {format(new Date(inspection.scheduledDate), 'h:mm a')}
+                </p>
+                <h3 className="font-semibold mt-1">{inspection.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  {inspection.location.address}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex -space-x-2">
+                <Avatar className="border-2 border-white h-8 w-8">
+                  <AvatarFallback>{inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </div>
+              <Badge
+                variant={inspection.status === 'Completed' ? 'default' : 'secondary'}
+                className="rounded-full"
+              >
+                {inspection.status}
+              </Badge>
+            </div>
           </div>
         ))}
-
-        {Array.from({ length: weeks * 7 }, (_, i) => {
-          const dayNumber = i - firstDayOfMonth + 1
-          const isCurrentMonth = dayNumber > 0 && dayNumber <= daysInMonth
-          const date = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            dayNumber
-          )
-          const dayInspections = isCurrentMonth ? getInspectionsForDate(date) : []
-          const isToday = isCurrentMonth && date.toDateString() === new Date().toDateString()
-
-          return (
-            <button
-              key={i}
-              className={cn(
-                'relative bg-card p-2 min-h-[80px] text-left transition-colors',
-                isCurrentMonth
-                  ? 'hover:bg-accent cursor-pointer'
-                  : 'text-muted-foreground cursor-default',
-                isToday && 'bg-accent'
-              )}
-              onClick={() => isCurrentMonth && onSelectDate(date)}
-              disabled={!isCurrentMonth}
-            >
-              <span className="text-sm">{isCurrentMonth ? dayNumber : ''}</span>
-              
-              {dayInspections.length > 0 && (
-                <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
-                  {dayInspections.map((inspection) => (
-                    <Badge
-                      key={inspection.id}
-                      variant="secondary"
-                      className={cn(
-                        'w-2 h-2 p-0 rounded-full',
-                        getStatusColor(inspection.status)
-                      )}
-                    />
-                  ))}
-                </div>
-              )}
-            </button>
-          )
-        })}
       </div>
     </div>
   )
 }
-

@@ -27,3 +27,4 @@ export const loginRequest: PopupRequest = {
 
 
 export const msalInstance = new PublicClientApplication(msalConfig);
+
