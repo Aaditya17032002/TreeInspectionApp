@@ -152,13 +152,13 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-full h-full max-w-none p-0 rounded-none' : 'max-w-4xl p-0'}`}>
-        <div className="sticky top-0 z-50 bg-white border-b p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold">Report Preview</h2>
+      <DialogContent className={`${isMobile ? 'w-full h-[100dvh] max-w-none p-0 rounded-none m-0' : 'max-w-4xl p-0'}`}>
+        <div className="sticky top-0 z-50 bg-background border-b p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-foreground">Report Preview</h2>
           <div className="flex gap-2">
             <Button
               onClick={onDownload}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
               size={isMobile ? "sm" : "default"}
             >
               <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
@@ -168,23 +168,21 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
               variant="ghost"
               size="icon"
               onClick={() => onOpenChange(false)}
+              className="text-foreground hover:bg-accent"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className={`${isMobile ? 'h-[calc(100vh-64px)]' : 'h-[80vh]'} bg-gray-50`}>
+        <div className={`${isMobile ? 'h-[calc(100dvh-64px)]' : 'h-[80vh]'} bg-muted`}>
           {pdfUrl && (
             <iframe
-              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`}
               className="w-full h-full"
               style={{
-                pointerEvents: 'none',
-                WebkitUserSelect: 'none',
-                MozUserSelect: 'none',
-                msUserSelect: 'none',
-                userSelect: 'none',
+                pointerEvents: 'auto',
+                WebkitOverflowScrolling: 'touch',
               }}
               title="PDF Preview"
             />
@@ -194,4 +192,3 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     </Dialog>
   )
 }
-

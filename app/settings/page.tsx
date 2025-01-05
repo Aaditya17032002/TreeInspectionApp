@@ -137,28 +137,52 @@ export default function SettingsPage() {
 
   const clearCache = async () => {
     try {
-      if ('caches' in window) {
-        const keys = await caches.keys()
-        await Promise.all(keys.map(key => caches.delete(key)))
-        
-        // Clear IndexedDB
-        const req = indexedDB.deleteDatabase('tree-inspection-db')
-        req.onsuccess = () => {
-          addNotification({
-            type: 'success',
-            title: 'Cache Cleared',
-            message: 'Application cache and data have been cleared successfully.',
-          })
-          // Reload to reinitialize the database
-          window.location.reload()
-        }
+      // Clear IndexedDB
+      const clearDatabase = async () => {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.deleteDatabase('tree-inspection-db')
+          request.onerror = () => reject(request.error)
+          request.onsuccess = () => resolve(true)
+        })
       }
+
+      // Clear Cache Storage
+      const clearCacheStorage = async () => {
+        if ('caches' in window) {
+          const keys = await caches.keys()
+          return Promise.all(keys.map(key => caches.delete(key)))
+        }
+        return Promise.resolve()
+      }
+
+      // Clear Local Storage
+      const clearLocalStorage = () => {
+        localStorage.clear()
+      }
+
+      // Execute all clearing operations
+      await Promise.all([
+        clearDatabase(),
+        clearCacheStorage(),
+      ])
+      clearLocalStorage()
+
+      addNotification({
+        type: 'success',
+        title: 'Cache Cleared',
+        message: 'Application cache and data have been cleared successfully.',
+      })
+
+      // Force reload after a short delay to ensure everything is cleared
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (error) {
       console.error('Error clearing cache:', error)
       addNotification({
         type: 'error',
         title: 'Error',
-        message: 'Failed to clear application cache.',
+        message: 'Failed to clear application cache and data.',
       })
     }
   }
@@ -171,24 +195,24 @@ export default function SettingsPage() {
 
   return (
     <main className="pb-16 md:pb-0">
-      <header className="border-b p-4 bg-white dark:bg-gray-800 sticky top-0 z-10">
+      <header className="border-b p-4 bg-background sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <SettingsIcon className="h-5 w-5 text-purple-600" />
-          <h1 className="text-xl font-bold">Settings</h1>
+          <SettingsIcon className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+          <h1 className="text-xl font-bold text-foreground">Settings</h1>
         </div>
       </header>
 
       <div className="p-4 space-y-4">
         <Card className="p-4">
-          <h2 className="font-medium mb-4">Appearance</h2>
+          <h2 className="font-medium mb-4 text-foreground">Appearance</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {currentTheme === 'dark' ? (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-4 w-4 text-foreground" />
               ) : (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-4 w-4 text-foreground" />
               )}
-              <Label htmlFor="dark-mode">Dark Mode</Label>
+              <Label htmlFor="dark-mode" className="text-foreground">Dark Mode</Label>
             </div>
             <Switch
               id="dark-mode"
@@ -199,11 +223,11 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="p-4">
-          <h2 className="font-medium mb-4">Notifications</h2>
+          <h2 className="font-medium mb-4 text-foreground">Notifications</h2>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              <Label htmlFor="notifications">Push Notifications</Label>
+              <Bell className="h-4 w-4 text-foreground" />
+              <Label htmlFor="notifications" className="text-foreground">Push Notifications</Label>
             </div>
             <Switch
               id="notifications"
@@ -214,27 +238,27 @@ export default function SettingsPage() {
         </Card>
 
         <Card className="p-4">
-          <h2 className="font-medium mb-4">Network Status</h2>
+          <h2 className="font-medium mb-4 text-foreground">Network Status</h2>
           <div className="flex items-center gap-2">
             {isOnline ? (
               <Wifi className="h-4 w-4 text-green-500" />
             ) : (
               <WifiOff className="h-4 w-4 text-red-500" />
             )}
-            <span>{isOnline ? 'Online' : 'Offline'}</span>
+            <span className="text-foreground">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
         </Card>
 
         <Card className="p-4">
-          <h2 className="font-medium mb-4">Storage</h2>
+          <h2 className="font-medium mb-4 text-foreground">Storage</h2>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              <span>Cached Data</span>
+              <Database className="h-4 w-4 text-foreground" />
+              <span className="text-foreground">Cached Data</span>
             </div>
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full text-foreground border-border hover:bg-accent"
               onClick={clearCache}
             >
               Clear Cache & Data
@@ -242,7 +266,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <div className="text-center text-sm text-gray-500 mt-8">
+        <div className="text-center text-sm text-muted-foreground mt-8">
           <p>Tree Inspection App v1.0.0</p>
           <p>© 2024 All rights reserved</p>
         </div>
