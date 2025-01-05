@@ -1,25 +1,34 @@
-import { PublicClientApplication } from '@azure/msal-browser'
 import { Client } from '@microsoft/microsoft-graph-client'
-import { msalConfig } from '../msal-config'
+import { msalInstance } from '../msal-config'
 
 interface CalendarEvent {
   subject: string
-  start: Date
-  end: Date
-  location: string
-  body: string
+  start: {
+    dateTime: string
+    timeZone: string
+  }
+  end: {
+    dateTime: string
+    timeZone: string
+  }
+  location: {
+    displayName: string
+  }
+  body: {
+    contentType: string
+    content: string
+  }
 }
 
 export async function addToOutlookCalendar(event: CalendarEvent) {
   try {
-    const pca = new PublicClientApplication(msalConfig)
-    const accounts = pca.getAllAccounts()
+    const accounts = msalInstance.getAllAccounts()
     
     if (accounts.length === 0) {
       throw new Error('No accounts found')
     }
 
-    const result = await pca.acquireTokenSilent({
+    const result = await msalInstance.acquireTokenSilent({
       scopes: ['Calendars.ReadWrite'],
       account: accounts[0]
     })
@@ -30,24 +39,7 @@ export async function addToOutlookCalendar(event: CalendarEvent) {
       },
     })
 
-    await client.api('/me/events').post({
-      subject: event.subject,
-      start: {
-        dateTime: event.start.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      end: {
-        dateTime: event.end.toISOString(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      location: {
-        displayName: event.location,
-      },
-      body: {
-        contentType: 'text',
-        content: event.body,
-      },
-    })
+    await client.api('/me/events').post(event)
   } catch (error) {
     console.error('Error adding event to calendar:', error)
     throw new Error('Failed to add event to calendar')

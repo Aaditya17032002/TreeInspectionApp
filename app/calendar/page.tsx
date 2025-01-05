@@ -62,12 +62,21 @@ export default function CalendarPage() {
     try {
       await addToOutlookCalendar({
         subject: inspection.title,
-        start: new Date(inspection.scheduledDate),
-        end: new Date(
-          new Date(inspection.scheduledDate).getTime() + 2 * 60 * 60 * 1000
-        ),
-        location: inspection.location.address,
-        body: inspection.details,
+        start: {
+          dateTime: new Date(inspection.scheduledDate).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: new Date(new Date(inspection.scheduledDate).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        location: {
+          displayName: inspection.location.address,
+        },
+        body: {
+          contentType: 'text',
+          content: inspection.details,
+        },
       })
       toast({
         title: 'Success',

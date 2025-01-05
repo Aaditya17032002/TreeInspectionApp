@@ -3,7 +3,7 @@
 import { Sheet, SheetContent } from '../../components/ui/sheet'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { CalendarIcon, MapPin, Clock, X, Share2, Plus } from 'lucide-react'
+import { CalendarIcon, MapPin, Clock, X, Plus } from 'lucide-react'
 import { Inspection } from '../../lib/types'
 import { format } from 'date-fns'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CalendarIcon, X } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, addHours } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/pop
 import { Textarea } from '../../components/ui/textarea'
 import { cn } from '../../lib/utils'
 import { Inspection } from '../../lib/types'
+import { addToOutlookCalendar } from '../../lib/services/microsoft-calendar'
+import { useToast } from '../../components/ui/use-toast'
 
 interface ScheduleDialogProps {
   open: boolean
@@ -29,6 +31,7 @@ export function ScheduleDialog({
   const [location, setLocation] = useState('')
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,9 +39,9 @@ export function ScheduleDialog({
 
     setLoading(true)
     try {
-      await onSchedule({
+      const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
-        status: 'Pending',
+        status: 'Pending' as const,
         location: {
           address: location,
           latitude: 0,
@@ -54,12 +57,55 @@ export function ScheduleDialog({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         synced: true,
-      })
+      }
+
+      await onSchedule(inspection)
+
+      // Add to Outlook Calendar
+      try {
+        await addToOutlookCalendar({
+          subject: title,
+          start: {
+            dateTime: date.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          end: {
+            dateTime: addHours(date, 1).toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          location: {
+            displayName: location,
+          },
+          body: {
+            contentType: 'text',
+            content: details,
+          },
+        })
+        toast({
+          title: "Success",
+          description: "Inspection scheduled and added to Outlook Calendar",
+        })
+      } catch (error) {
+        console.error('Error adding to Outlook Calendar:', error)
+        toast({
+          title: "Warning",
+          description: "Inspection scheduled, but failed to add to Outlook Calendar",
+          variant: "destructive",
+        })
+      }
+
       onOpenChange(false)
       setTitle('')
       setDate(undefined)
       setLocation('')
       setDetails('')
+    } catch (error) {
+      console.error('Error scheduling inspection:', error)
+      toast({
+        title: "Error",
+        description: "Failed to schedule inspection",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -161,3 +207,4 @@ export function ScheduleDialog({
     </Dialog>
   )
 }
+

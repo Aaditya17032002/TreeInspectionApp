@@ -52,7 +52,7 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
   }
 
   return (
-    <div className="flex flex-col h-full bg-primary/10 dark:bg-primary/20 rounded-3xl overflow-hidden max-w-2xl mx-auto shadow-lg">
+    <div className="flex flex-col h-full bg-[#C3B1E1] dark:bg-primary/10 rounded-3xl overflow-hidden max-w-2xl mx-auto shadow-lg">
       {/* Calendar Header */}
       <div className="p-6 border-b border-primary/20 shadow-sm bg-white/50 dark:bg-gray-800/50">
         <div className="flex items-center justify-between mb-6">
@@ -95,7 +95,7 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
       </div>
 
       {/* Calendar Days */}
-      <div className="p-6 bg-primary/5 dark:bg-primary/10">
+      <div className="p-6 bg-[#C3B1E1]/50 dark:bg-primary/5">
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: weeks * 7 }, (_, i) => {
             const dayNumber = i - firstDayOfMonth + 1
