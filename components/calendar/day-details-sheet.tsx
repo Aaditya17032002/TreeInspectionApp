@@ -1,12 +1,12 @@
 'use client'
 
-import { Sheet, SheetContent, SheetHeader } from '../../components/ui/sheet'
+import { Sheet, SheetContent } from '../../components/ui/sheet'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { CalendarIcon, MapPin, Clock, X, Share2, Plus } from 'lucide-react'
 import { Inspection } from '../../lib/types'
 import { format } from 'date-fns'
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
+import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 
 interface DayDetailsSheetProps {
   date: Date | null
@@ -30,30 +30,22 @@ export function DayDetailsSheet({
         className="h-[90vh] sm:h-[85vh] p-0 rounded-t-3xl overflow-hidden"
       >
         <div className="flex flex-col h-full">
-          <SheetHeader className="p-6 border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-primary/10 text-primary-foreground p-3 rounded-2xl">
-                  <CalendarIcon className="h-6 w-6" />
+          <div className="p-6 border-b shadow-sm bg-white dark:bg-gray-800">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 text-primary-foreground p-3 rounded-2xl">
+                    <CalendarIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      {format(date, 'MMMM d, yyyy')}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {inspections.length} inspections scheduled
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {format(date, 'MMMM d, yyyy')}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {inspections.length} inspections scheduled
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  onClick={onSchedule}
-                  className="rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -63,8 +55,16 @@ export function DayDetailsSheet({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
+              <Button
+                variant="default"
+                onClick={onSchedule}
+                className="w-full rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Schedule Inspection
+              </Button>
             </div>
-          </SheetHeader>
+          </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {inspections.length === 0 ? (
@@ -74,14 +74,6 @@ export function DayDetailsSheet({
                 <p className="mt-2 text-muted-foreground">
                   Schedule an inspection for this day
                 </p>
-                <Button
-                  variant="default"
-                  onClick={onSchedule}
-                  className="mt-6 rounded-full bg-primary/10 text-primary-foreground hover:bg-primary/20"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule Inspection
-                </Button>
               </div>
             ) : (
               inspections.map((inspection) => (

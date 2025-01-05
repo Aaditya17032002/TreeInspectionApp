@@ -52,9 +52,9 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
   }
 
   return (
-    <div className="flex flex-col h-full bg-background dark:bg-gray-900 rounded-3xl overflow-hidden max-w-2xl mx-auto">
+    <div className="flex flex-col h-full bg-primary/10 dark:bg-primary/20 rounded-3xl overflow-hidden max-w-2xl mx-auto shadow-lg">
       {/* Calendar Header */}
-      <div className="bg-primary/10 dark:bg-primary/20 p-6">
+      <div className="p-6 border-b border-primary/20 shadow-sm bg-white/50 dark:bg-gray-800/50">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button
@@ -85,15 +85,17 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
         </div>
 
         {/* Week Days */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
             <div key={day} className="text-center text-sm font-medium text-primary-foreground/70">
               {day}
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Calendar Days */}
+      {/* Calendar Days */}
+      <div className="p-6 bg-primary/5 dark:bg-primary/10">
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: weeks * 7 }, (_, i) => {
             const dayNumber = i - firstDayOfMonth + 1
@@ -134,11 +136,11 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
       </div>
 
       {/* Inspections List */}
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+      <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-white dark:bg-gray-900">
         {getInspectionsForDate(currentDate).map((inspection) => (
           <div
             key={inspection.id}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm"
+            className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 shadow-sm"
           >
             <div className="flex items-start justify-between">
               <div>
