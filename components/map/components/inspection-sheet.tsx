@@ -28,7 +28,7 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
   useEffect(() => {
     const handleAddressUpdate = (event: CustomEvent) => {
       if (!inspection) return
-      
+
       const { latitude, longitude, address } = event.detail
       if (
         latitude === inspection.location.latitude &&
@@ -65,8 +65,8 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
   return (
     <>
       <Sheet open={!!inspection} onOpenChange={onClose}>
-        <SheetContent 
-          side="bottom" 
+        <SheetContent
+          side="bottom"
           className={cn(
             "h-[90vh] p-0 bg-white",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -93,9 +93,9 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
                 <h3 className="text-xl font-semibold text-gray-900">{inspection.title}</h3>
 
                 <div className="space-y-6">
-                  <InfoItem 
-                    icon={MapPin} 
-                    label="Location" 
+                  <InfoItem
+                    icon={MapPin}
+                    label="Location"
                     value={
                       <>
                         {currentAddress}
@@ -115,13 +115,13 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
                       <h4 className="font-semibold text-gray-900">Images</h4>
                       <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
                         {inspection.images.map((img, index) => (
-                          <div 
-                            key={index} 
+                          <div
+                            key={index}
                             className="relative aspect-square cursor-pointer"
                             onClick={() => setSelectedImageIndex(index)}
                           >
-                            <img 
-                              src={`data:image/jpeg;base64,${img}`}
+                            <img
+                              src={img}
                               alt={`Inspection image ${index + 1}`}
                               className="rounded-lg object-cover w-full h-full hover:opacity-90 transition-opacity"
                             />
