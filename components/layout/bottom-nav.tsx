@@ -1,20 +1,20 @@
 'use client'
 
-import { Home, Map, FileText, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Home, Map, Calendar, FileText, MoreHorizontal, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '../../lib/utils'
 import { useToast } from "../../components/ui/use-toast"
 import { useState } from 'react'
-import { Sheet, SheetContent } from "../../components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet"
 import { useMsal, useIsAuthenticated } from "@azure/msal-react"
+import { MoreSheet } from './more-sheet'
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Map', href: '/map', icon: Map },
+  { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 interface BottomNavProps {
@@ -28,6 +28,7 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
   const { instance } = useMsal()
   const isAuthenticated = useIsAuthenticated()
 
@@ -85,10 +86,17 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
                 href={item.href}
                 className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
-                <item.icon className="w-5 h-5 mb-2 text-gray-500 dark:text-gray-400" />
+                <item.icon className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">{item.name}</span>
               </Link>
             ))}
+            <button
+              onClick={() => setIsMoreSheetOpen(true)}
+              className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <MoreHorizontal className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">More</span>
+            </button>
           </div>
         </div>
       ) : (
@@ -108,6 +116,26 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
           </div>
           <div className="flex flex-col h-[calc(100vh-5rem)] overflow-y-auto px-4 space-y-2">
             <NavLinks />
+            <Link
+              href="/notifications"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
+                !isOpen && "justify-center"
+              )}
+            >
+              <Bell className="h-5 w-5 flex-shrink-0" />
+              {isOpen && <span>Notifications</span>}
+            </Link>
+            <Link
+              href="/settings"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
+                !isOpen && "justify-center"
+              )}
+            >
+              <Settings className="h-5 w-5 flex-shrink-0" />
+              {isOpen && <span>Settings</span>}
+            </Link>
             <button
               onClick={handleLogout}
               className={cn(
@@ -154,6 +182,8 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
           </SheetContent>
         </Sheet>
       )}
+
+      <MoreSheet open={isMoreSheetOpen} onOpenChange={setIsMoreSheetOpen} onLogout={handleLogout} />
     </>
   )
 }
