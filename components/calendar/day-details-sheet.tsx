@@ -76,58 +76,58 @@ export function DayDetailsSheet({
                 </p>
               </div>
             ) : (
-              inspections.map((inspection) => (
-                <div
-                  key={inspection.id}
-                  className="bg-muted/50 rounded-2xl p-6 space-y-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{inspection.title}</h3>
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {format(new Date(inspection.scheduledDate), 'h:mm a')}
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin className="h-4 w-4" />
-                          {inspection.location.address}
+              inspections.map((inspection, index) => (
+                <div key={inspection.id}>
+                  {index > 0 && <div className="border-t border-gray-200 dark:border-gray-700 my-4" />}
+                  <div className="bg-muted/50 rounded-2xl p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold">{inspection.title}</h3>
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {format(new Date(inspection.scheduledDate), 'h:mm a')}
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            {inspection.location.address}
+                          </div>
                         </div>
                       </div>
+                      <Badge
+                        variant={
+                          inspection.status === 'Completed'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className="rounded-full"
+                      >
+                        {inspection.status}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        inspection.status === 'Completed'
-                          ? 'default'
-                          : 'secondary'
-                      }
-                      className="rounded-full"
-                    >
-                      {inspection.status}
-                    </Badge>
-                  </div>
 
-                  {inspection.details && (
-                    <p className="text-muted-foreground text-sm">{inspection.details}</p>
-                  )}
+                    {inspection.details && (
+                      <p className="text-muted-foreground text-sm">{inspection.details}</p>
+                    )}
 
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex -space-x-2">
-                      <Avatar className="border-2 border-background">
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex -space-x-2">
+                        <Avatar className="border-2 border-background">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="rounded-xl"
+                        onClick={() => {
+                          window.location.href = `/inspections/${inspection.id}`
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => {
-                        window.location.href = `/inspections/${inspection.id}`
-                      }}
-                    >
-                      View Details
-                    </Button>
                   </div>
                 </div>
               ))

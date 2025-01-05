@@ -52,7 +52,7 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#C3B1E1] dark:bg-primary/10 rounded-3xl overflow-hidden max-w-2xl mx-auto shadow-lg">
+    <div className="flex flex-col h-full bg-[#C3B1E1] dark:bg-primary/5 rounded-3xl overflow-hidden max-w-2xl mx-auto shadow-lg">
       {/* Calendar Header */}
       <div className="p-6 border-b border-primary/20 shadow-sm bg-white/50 dark:bg-gray-800/50">
         <div className="flex items-center justify-between mb-6">
@@ -136,49 +136,50 @@ export function Calendar({ inspections, onSelectDate, currentUser }: CalendarPro
       </div>
 
       {/* Inspections List */}
-      <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-white dark:bg-gray-900">
-        {getInspectionsForDate(currentDate).map((inspection) => (
-          <div
-            key={inspection.id}
-            className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 shadow-sm"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(new Date(inspection.scheduledDate), 'h:mm a')}
-                </p>
-                <h3 className="font-semibold mt-1">{inspection.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  {inspection.location.address}
-                </p>
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full p-4 space-y-3 overflow-y-auto">
+          {getInspectionsForDate(currentDate).map((inspection) => (
+            <div
+              key={inspection.id}
+              className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {format(new Date(inspection.scheduledDate), 'h:mm a')}
+                  </p>
+                  <h3 className="font-semibold mt-1">{inspection.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    {inspection.location.address}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex -space-x-2">
-                <Avatar className="border-2 border-white h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex -space-x-2">
+                  <Avatar className="border-2 border-white h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {inspection.inspector.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <Badge
+                  variant={inspection.status === 'Completed' ? 'default' : 'secondary'}
+                  className="rounded-full"
+                >
+                  {inspection.status}
+                </Badge>
               </div>
-              <Badge
-                variant={inspection.status === 'Completed' ? 'default' : 'secondary'}
-                className="rounded-full"
-              >
-                {inspection.status}
-              </Badge>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
 }
-

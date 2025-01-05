@@ -37,12 +37,22 @@ export async function initDB() {
   }
 }
 
-export async function saveInspection(inspection: Inspection, images: File[]): Promise<Inspection> {
+export async function saveInspection(inspection: Inspection, images: File[] = []): Promise<Inspection> {
   const db = await initDB()
 
   try {
-    await db.put('inspections', inspection)
-    return inspection
+    // Generate a unique ID if not provided
+    const inspectionWithId = {
+      ...inspection,
+      id: inspection.id || crypto.randomUUID(),
+      createdAt: inspection.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      synced: false,
+      images: [],
+    }
+
+    await db.put('inspections', inspectionWithId)
+    return inspectionWithId
   } catch (error) {
     console.error('Error saving inspection:', error)
     throw error

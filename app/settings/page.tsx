@@ -19,14 +19,24 @@ export default function SettingsPage() {
   useEffect(() => {
     setMounted(true)
     
-    // Check if it's evening/night time (between 6 PM and 6 AM)
-    const hour = new Date().getHours()
-    const shouldBeDark = hour >= 18 || hour < 6
+    // Check system preference for dark mode
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     
-    // Set initial theme based on time if not already set
+    // Set initial theme based on system preference if not already set
     if (!localStorage.getItem('theme')) {
-      setTheme(shouldBeDark ? 'dark' : 'light')
+      setTheme(prefersDark ? 'dark' : 'light')
     }
+
+    // Listen for changes in system color scheme
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) {
+        setTheme(e.matches ? 'dark' : 'light')
+      }
+    }
+    mediaQuery.addListener(handleChange)
+
+    return () => mediaQuery.removeListener(handleChange)
   }, [setTheme])
 
   // Handle online/offline status
@@ -116,7 +126,7 @@ export default function SettingsPage() {
 
   return (
     <main className="pb-16 md:pb-0">
-      <header className="border-b p-4 bg-white sticky top-0 z-10">
+      <header className="border-b p-4 bg-white dark:bg-gray-800 sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <SettingsIcon className="h-5 w-5 text-purple-600" />
           <h1 className="text-xl font-bold">Settings</h1>
@@ -138,7 +148,10 @@ export default function SettingsPage() {
             <Switch
               id="dark-mode"
               checked={theme === 'dark'}
-              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              onCheckedChange={(checked) => {
+                setTheme(checked ? 'dark' : 'light')
+                localStorage.setItem('theme', checked ? 'dark' : 'light')
+              }}
             />
           </div>
         </Card>

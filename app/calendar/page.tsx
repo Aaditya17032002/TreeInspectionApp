@@ -5,7 +5,7 @@ import { Calendar } from '../../components/calendar/calendar'
 import { CalendarHeader } from '../../components/calendar/calendar-header'
 import { ScheduleDialog } from '../../components/calendar/schedule-dialog'
 import { DayDetailsSheet } from '../../components/calendar/day-details-sheet'
-import { getAllInspections } from '../../lib/db'
+import { getAllInspections, saveInspection } from '../../lib/db'
 import { Inspection } from '../../lib/types'
 import { addToOutlookCalendar } from '../../lib/services/microsoft-calendar'
 import { useToast } from '../../components/ui/use-toast'
@@ -58,26 +58,41 @@ export default function CalendarPage() {
     }
   }
 
-  const handleSchedule = async (inspection: Omit<Inspection, 'id' | 'images'>) => {
+  const handleSchedule = async (inspectionData: Omit<Inspection, 'id' | 'images' | 'createdAt' | 'updatedAt' | 'synced'>) => {
     try {
+      // Create a new inspection object with required fields
+      const newInspection: Inspection = {
+        ...inspectionData,
+        id: crypto.randomUUID(),
+        images: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        synced: false,
+      }
+
+      // Save the inspection to the local database
+      const savedInspection = await saveInspection(newInspection)
+
+      // Add to Outlook Calendar
       await addToOutlookCalendar({
-        subject: inspection.title,
+        subject: savedInspection.title,
         start: {
-          dateTime: new Date(inspection.scheduledDate).toISOString(),
+          dateTime: new Date(savedInspection.scheduledDate).toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         end: {
-          dateTime: new Date(new Date(inspection.scheduledDate).getTime() + 2 * 60 * 60 * 1000).toISOString(),
+          dateTime: new Date(new Date(savedInspection.scheduledDate).getTime() + 2 * 60 * 60 * 1000).toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         location: {
-          displayName: inspection.location.address,
+          displayName: savedInspection.location.address,
         },
         body: {
           contentType: 'text',
-          content: inspection.details,
+          content: savedInspection.details || '',
         },
       })
+
       toast({
         title: 'Success',
         description: 'Inspection scheduled and added to calendar',
