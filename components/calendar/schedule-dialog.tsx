@@ -229,7 +229,7 @@ export function ScheduleDialog({
             <Label htmlFor="time">Time</Label>
             <div className="flex items-center">
               <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-              <Select value={time} onValueChange={setTime}>
+              <Select value={time} onValueChange={setTime} >
                 <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select time" />
                 </SelectTrigger>

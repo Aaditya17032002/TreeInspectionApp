@@ -208,7 +208,7 @@ export default function InspectionDetailsPage() {
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className='customUpdateStatus'>
                     <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="In-Progress">In Progress</SelectItem>
                     <SelectItem value="Completed">Completed</SelectItem>
