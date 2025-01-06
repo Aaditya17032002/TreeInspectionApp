@@ -1,20 +1,25 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { ThemeProvider } from 'next-themes'
 import { MsalProvider } from "@azure/msal-react"
 import { PublicClientApplication } from "@azure/msal-browser"
 import { msalConfig } from "../lib/msal-config"
-import { ThemeProvider } from '../components/theme-provider'
 
+// Initialize MSAL outside of component
 const msalInstance = new PublicClientApplication(msalConfig)
 
-export function Providers({ children }: { children: ReactNode }) {
+interface ProvidersProps {
+  children: ReactNode
+}
+
+export function Providers({ children }: ProvidersProps) {
   return (
     <MsalProvider instance={msalInstance}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
-        enableSystem={false}
+        defaultTheme="system"
+        enableSystem
         disableTransitionOnChange
       >
         {children}
