@@ -1,11 +1,13 @@
+'use client'
+
 import { InspectionList } from '../components/inspections/inspection-list'
 import { TreeDeciduous } from 'lucide-react'
 
 export default function HomePage() {
   return (
-    <main className="pb-16 md:pb-0 bg-background">
-      <header className="border-b p-4 bg-background sticky top-0 z-10">
-        <div>
+    <div className="flex flex-col min-h-screen">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto p-4">
           <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
             <span className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
               <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
@@ -16,8 +18,10 @@ export default function HomePage() {
         </div>
       </header>
       
-      <InspectionList />
-    </main>
+      <main className="flex-1 container mx-auto">
+        <InspectionList />
+      </main>
+    </div>
   )
 }
 

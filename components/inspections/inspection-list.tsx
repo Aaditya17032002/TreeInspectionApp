@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { MapPin, Clock } from 'lucide-react'
 import { getAllInspections, initDB } from '../../lib/db'
 import { Inspection } from '../../lib/types'
-import React from 'react'
 
 export function InspectionList() {
   const [inspections, setInspections] = useState<Inspection[]>([])
@@ -16,12 +15,11 @@ export function InspectionList() {
   useEffect(() => {
     const loadInspections = async () => {
       try {
-        await initDB() // Ensure DB is initialized
+        await initDB()
         const data = await getAllInspections()
         setInspections(data)
       } catch (error) {
         console.error('Error loading inspections:', error)
-        // Optionally, you can set an error state here to display to the user
       } finally {
         setLoading(false)
       }
@@ -31,7 +29,7 @@ export function InspectionList() {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="py-4 px-4 space-y-4">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="p-4 animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
@@ -44,14 +42,14 @@ export function InspectionList() {
 
   if (inspections.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className="py-8 px-4 text-center text-gray-500">
         <p>No inspections found</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="py-4 px-4 space-y-4 pb-20 md:pb-6">
       {inspections.map((inspection) => (
         <Link 
           key={inspection.id} 
@@ -71,14 +69,14 @@ export function InspectionList() {
                   </Badge>
                 </div>
                 <h3 className="font-medium">{inspection.title}</h3>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {inspection.location.address}
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{inspection.location.address || 'Address not found'}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {new Date(inspection.scheduledDate).toLocaleDateString()}
+                    <Clock className="h-4 w-4 shrink-0" />
+                    <span>{new Date(inspection.scheduledDate).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
