@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
 import { useToast } from "../../components/ui/use-toast"
-import { useMsal, useIsAuthenticated } from "@azure/msal-react"
+import { useMsal } from "@azure/msal-react"
 import { loginRequest } from "../../lib/msal-config"
 import { Scale } from 'lucide-react'
 
@@ -14,7 +14,6 @@ export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { instance } = useMsal()
-  const isAuthenticated = useIsAuthenticated()
 
   useEffect(() => {
     const handleRedirect = async () => {
@@ -24,33 +23,30 @@ export default function LoginPage() {
           console.log("Redirect handled successfully")
           localStorage.setItem("isLoggedIn", "true")
           router.push("/")
+        } else if (localStorage.getItem("isLoggedIn") === "true") {
+          router.push("/")
         }
       } catch (error) {
         console.error('Redirect handling error:', error)
+        toast({
+          title: "Login Error",
+          description: "An error occurred during login. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
       }
     }
 
-    if (isAuthenticated) {
-      localStorage.setItem("isLoggedIn", "true")
-      router.push("/")
-    } else {
-      handleRedirect()
-    }
-  }, [instance, isAuthenticated, router])
+    handleRedirect()
+  }, [instance, router, toast])
 
   const handleLogin = async () => {
     setLoading(true)
 
     try {
-      if (window.innerWidth < 768) {  // Use redirect for mobile devices
-        await instance.loginRedirect(loginRequest)
-      } else {  // Use popup for larger screens
-        const response = await instance.loginPopup(loginRequest)
-        if (response) {
-          localStorage.setItem("isLoggedIn", "true")
-          router.push("/")
-        }
-      }
+      // Always use loginRedirect for consistency across all devices
+      await instance.loginRedirect(loginRequest)
     } catch (error) {
       console.error('Login error:', error)
       toast({

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import { useMsal } from "@azure/msal-react";
 import { BottomNav } from '../layout/bottom-nav';
 
 interface ProtectedRouteProps {
@@ -13,7 +13,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { instance } = useMsal();
-  const isAuthenticated = useIsAuthenticated();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isSideNavOpen, setIsSideNavOpen] = useState(true);
@@ -28,11 +27,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await instance.handleRedirectPromise();
-        
-        if (!isAuthenticated && pathname !== '/login') {
+        const result = await instance.handleRedirectPromise();
+        const isAuthenticated = localStorage.getItem("isLoggedIn") === "true";
+
+        if (result) {
+          // User has just logged in, redirect to home
+          localStorage.setItem("isLoggedIn", "true");
+          router.push('/');
+        } else if (!isAuthenticated && pathname !== '/login') {
+          // User is not authenticated and not on login page, redirect to login
           router.push('/login');
         } else if (isAuthenticated && pathname === '/login') {
+          // User is authenticated but on login page, redirect to home
           router.push('/');
         }
       } catch (error) {
@@ -44,7 +50,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
 
     checkAuth();
-  }, [isAuthenticated, router, pathname, instance]);
+  }, [router, pathname, instance]);
 
   if (isLoading) {
     return (
@@ -54,6 +60,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  const isAuthenticated = localStorage.getItem("isLoggedIn") === "true";
   const showNavbar = isAuthenticated && pathname !== '/login';
   const showBottomNav = showNavbar && isMobile;
   const showSideNav = showNavbar && !isMobile;
@@ -74,3 +81,4 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     </div>
   );
 }
+
