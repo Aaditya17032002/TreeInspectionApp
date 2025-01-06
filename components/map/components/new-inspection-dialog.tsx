@@ -204,7 +204,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
 
   return (
     <>
-      <div className={`fixed inset-0 bg-background/80 backdrop-blur-sm ${open ? 'z-50' : 'z-0 hidden'}`} />
+     <div className={`${open ? 'fixed inset-0 z-50 bg-white' : 'hidden'}`} />
       <Dialog 
         open={open} 
         onOpenChange={(newOpen) => {
