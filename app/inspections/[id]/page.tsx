@@ -78,7 +78,7 @@ export default function InspectionDetailsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-background px-4 py-2">
+        <header className="sticky top-0 z-10 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background px-4 py-2">
           <Button
             variant="ghost"
             size="sm"
@@ -105,7 +105,7 @@ export default function InspectionDetailsPage() {
   if (!inspection) {
     return (
       <main className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-background px-4 py-2">
+        <header className="sticky top-0 z-10 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background px-4 py-2">
           <Button
             variant="ghost"
             size="sm"
@@ -126,34 +126,38 @@ export default function InspectionDetailsPage() {
   return (
     <>
       <main className="min-h-screen bg-background pb-16 md:pb-0">
-        <header className="sticky top-0 z-10 bg-background px-4 py-2 border-b">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-2 text-foreground hover:bg-accent"
-            onClick={() => router.back()}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-        </header>
+        <div className="bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background">
+          <header className="sticky top-0 z-10 px-4 py-2 border-b backdrop-blur-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-2 text-foreground hover:bg-accent"
+              onClick={() => router.back()}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Back
+            </Button>
+          </header>
+
+          <div className="px-4 pb-4">
+            <div className="mb-6">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-purple-100/80 dark:bg-purple-900/80 p-3 rounded-lg backdrop-blur-sm">
+                  <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                  <h1 className="text-xl font-bold text-purple-600 dark:text-purple-300">
+                    Complaint #{inspection.id}
+                  </h1>
+                </div>
+                <Badge variant="secondary" className="bg-purple-100/80 dark:bg-purple-900/80 backdrop-blur-sm text-purple-700 dark:text-purple-300">
+                  {inspection.status}
+                </Badge>
+              </div>
+              <p className="mt-1 text-muted-foreground">{inspection.title}</p>
+            </div>
+          </div>
+        </div>
 
         <div className="px-4 pb-4">
-          <div className="mb-6">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
-                <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                <h1 className="text-xl font-bold text-purple-600 dark:text-purple-300">
-                  Complaint #{inspection.id}
-                </h1>
-              </div>
-              <Badge variant="secondary" className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
-                {inspection.status}
-              </Badge>
-            </div>
-            <p className="mt-1 text-muted-foreground">{inspection.title}</p>
-          </div>
-
           <div className="space-y-6 rounded-lg bg-card p-4">
             <InfoItem
               icon={MapPin}
@@ -265,7 +269,9 @@ function InfoItem({
 }) {
   return (
     <div className="flex gap-3">
-      <Icon className="h-5 w-5 shrink-0 text-purple-600 dark:text-purple-300" />
+      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+        <Icon className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+      </div>
       <div>
         <div className="font-medium text-foreground">{label}</div>
         <div className={cn("mt-1 text-muted-foreground", className)}>{value}</div>

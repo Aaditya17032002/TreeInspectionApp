@@ -75,27 +75,31 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
           )}
         >
           <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 p-4 border-b bg-background">
-              <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-accent">
-                <ArrowLeft className="h-6 w-6 text-foreground" />
-              </Button>
-              <SheetTitle className="text-xl text-foreground">Inspection Details</SheetTitle>
-            </div>
+            <div className="flex flex-col gap-4 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background">
+              <div className="flex items-center gap-2 p-4 border-b backdrop-blur-sm">
+                <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-accent">
+                  <ArrowLeft className="h-6 w-6 text-foreground" />
+                </Button>
+                <SheetTitle className="text-xl text-foreground">Inspection Details</SheetTitle>
+              </div>
 
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 space-y-6">
+              <div className="px-4 pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 bg-purple-100/80 dark:bg-purple-900/80 p-3 rounded-lg backdrop-blur-sm">
                     <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
                     <span className="text-xl font-bold text-purple-600 dark:text-purple-300">
                       #{inspection.id}
                     </span>
                   </div>
-                  <div className="inline-block px-4 py-1 text-sm bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full font-medium">
+                  <div className="inline-block px-4 py-1 text-sm bg-purple-100/80 dark:bg-purple-900/80 backdrop-blur-sm text-purple-700 dark:text-purple-300 rounded-full font-medium">
                     {inspection.status}
                   </div>
                 </div>
+              </div>
+            </div>
 
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-6">
                 <h3 className="text-xl font-semibold text-foreground">{inspection.title}</h3>
 
                 <div className="space-y-6">
