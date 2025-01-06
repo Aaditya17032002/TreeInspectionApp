@@ -6,7 +6,7 @@ import { TreeDeciduous } from 'lucide-react'
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto p-4">
           <h1 className="text-2xl font-bold flex items-center gap-2 text-foreground">
             <span className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
