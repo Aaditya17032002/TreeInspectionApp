@@ -100,102 +100,106 @@ export default function InspectionDetailsPage() {
   return (
     <>
       <main className="min-h-screen bg-white">
-        <div className="relative bg-gradient-to-b from-purple-500 to-purple-100 pb-8">
-          <div className="absolute inset-0 overflow-hidden">
-            <TreeDeciduous className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300/20 h-48 w-48" />
-          </div>
-          
-          <header className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="m-4 text-white hover:bg-white/20"
-              onClick={() => router.back()}
-            >
-              <ChevronLeft className="h-5 w-5 mr-1" />
-              Back
-            </Button>
-          </header>
+        <div className="bg-gradient-to-b from-purple-500 to-purple-100">
+          <div className="relative max-w-5xl mx-auto">
+            <div className="absolute inset-0 overflow-hidden">
+              <TreeDeciduous className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300/20 h-48 w-48" />
+            </div>
+            
+            <header className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="m-4 text-white hover:bg-white/20"
+                onClick={() => router.back()}
+              >
+                <ChevronLeft className="h-5 w-5 mr-1" />
+                Back
+              </Button>
+            </header>
 
-          <div className="relative px-6 pt-2">
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-baseline justify-between">
-                <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
-                  Complaint #{inspection.id}
-                </h1>
-                <Badge variant="outline" className="bg-white/90 text-purple-600 border-none">
-                  {inspection.status}
-                </Badge>
+            <div className="relative px-4 pt-2 pb-8">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+                    Complaint #{inspection.id}
+                  </h1>
+                  <Badge variant="outline" className="bg-white/90 text-purple-600 border-none">
+                    {inspection.status}
+                  </Badge>
+                </div>
+                <h2 className="text-white/90 font-medium">
+                  {inspection.title}
+                </h2>
               </div>
-              <h2 className="text-white/90 font-medium">
-                {inspection.title}
-              </h2>
             </div>
           </div>
         </div>
 
-        <div className="px-6 -mt-4">
-          <div className="bg-white rounded-t-3xl shadow-sm p-6 space-y-6">
-            <InfoItem
-              icon={MapPin}
-              label="Location"
-              value={
-                <>
-                  {currentAddress}
-                  <div className="text-sm text-gray-500 mt-1">
-                    Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
-                  </div>
-                </>
-              }
-            />
-
-            <InfoItem
-              icon={Calendar}
-              label="Scheduled Date"
-              value={new Date(inspection.scheduledDate).toLocaleString()}
-            />
-
-            <InfoItem
-              icon={User}
-              label="Inspector"
-              value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`}
-            />
-
-            <InfoItem
-              icon={Building2}
-              label="Community Board"
-              value={inspection.communityBoard}
-            />
-
-            <InfoItem
-              icon={FileText}
-              label="Details"
-              value={inspection.details}
-            />
-
-            {inspection.images && inspection.images.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900">Images</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {inspection.images.map((img, index) => (
-                    <div 
-                      key={index}
-                      className="relative cursor-pointer aspect-square"
-                      onClick={() => setSelectedImageIndex(index)}
-                    >
-                      <img
-                        src={`data:image/jpeg;base64,${img}`}
-                        alt={`Inspection image ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
-                      />
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white -mt-4 rounded-t-3xl">
+            <div className="divide-y divide-gray-100">
+              <InfoItem
+                icon={MapPin}
+                label="Location"
+                value={
+                  <>
+                    {currentAddress}
+                    <div className="text-sm text-gray-500 mt-1">
+                      Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </>
+                }
+              />
 
-            <div className="pt-4 space-y-4">
-              <div className="flex items-center justify-between">
+              <InfoItem
+                icon={Calendar}
+                label="Scheduled Date"
+                value={new Date(inspection.scheduledDate).toLocaleString()}
+              />
+
+              <InfoItem
+                icon={User}
+                label="Inspector"
+                value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`}
+              />
+
+              <InfoItem
+                icon={Building2}
+                label="Community Board"
+                value={inspection.communityBoard}
+              />
+
+              <InfoItem
+                icon={FileText}
+                label="Details"
+                value={inspection.details}
+              />
+
+              {inspection.images && inspection.images.length > 0 && (
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Images</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {inspection.images.map((img, index) => (
+                      <div 
+                        key={index}
+                        className="relative cursor-pointer aspect-square"
+                        onClick={() => setSelectedImageIndex(index)}
+                      >
+                        <img
+                          src={`data:image/jpeg;base64,${img}`}
+                          alt={`Inspection image ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t">
+              <div className="flex items-center justify-between mb-4">
                 <span className="font-medium text-gray-900">Update Status:</span>
                 <Select
                   value={inspection.status}
@@ -239,15 +243,15 @@ function InfoItem({
   value: React.ReactNode
 }) {
   return (
-    <div className="flex gap-4 items-start">
+    <div className="p-4 flex gap-4 items-start">
       <div className="rounded-full bg-purple-100 p-3 flex-shrink-0">
         <Icon className="h-6 w-6 text-purple-600" />
       </div>
-      <div className="flex-1">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+      <div className="flex-1 min-w-0">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">
           {label}
         </h3>
-        <div className="text-gray-600">
+        <div className="text-gray-600 break-words">
           {value}
         </div>
       </div>
