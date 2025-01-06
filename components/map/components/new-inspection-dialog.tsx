@@ -204,7 +204,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
 
   return (
     <>
-     <div className={`${open ? 'fixed inset-0 z-50 ' : 'hidden'}`} />
       <Dialog 
         open={open} 
         onOpenChange={(newOpen) => {
