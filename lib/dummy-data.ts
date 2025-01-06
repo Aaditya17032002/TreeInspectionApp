@@ -21,10 +21,7 @@ export const dummyInspections: Inspection[] = [
     createdAt: '2024-01-20T10:00:00.000Z',
     updatedAt: '2024-01-20T10:00:00.000Z',
     synced: false,
-    dynamicsId: undefined,
-    description: undefined,
-    address: undefined,
-    timeAgo: undefined
+    dynamicsId: undefined
   },
   {
     id: '5148441',
@@ -46,10 +43,7 @@ export const dummyInspections: Inspection[] = [
     createdAt: '2024-01-20T11:00:00.000Z',
     updatedAt: '2024-01-20T11:00:00.000Z',
     synced: false,
-    dynamicsId: undefined,
-    description: undefined,
-    address: undefined,
-    timeAgo: undefined
+    dynamicsId: undefined
   },
   {
     id: '5148442',
@@ -71,9 +65,6 @@ export const dummyInspections: Inspection[] = [
     createdAt: '2024-01-20T12:00:00.000Z',
     updatedAt: '2024-01-20T12:00:00.000Z',
     synced: false,
-    dynamicsId: undefined,
-    description: undefined,
-    address: undefined,
-    timeAgo: undefined
+    dynamicsId: undefined
   }
 ];

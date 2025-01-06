@@ -93,26 +93,23 @@ export function ScheduleDialog({
     try {
       const scheduledDateTime = getScheduledDateTime(date, time)
       const inspection: Omit<Inspection, 'id' | 'images'> = {
-          title,
-          status: 'Pending' as const,
-          location: {
-              address: location,
-              latitude: 0,
-              longitude: 0,
-          },
-          scheduledDate: scheduledDateTime.toISOString(),
-          inspector: {
-              name: 'Current User',
-              id: 'current-user-id',
-          },
-          communityBoard: '211',
-          details,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          synced: true,
-          description: undefined,
-          address: undefined,
-          timeAgo: undefined
+        title,
+        status: 'Pending' as const,
+        location: {
+          address: location,
+          latitude: 0,
+          longitude: 0,
+        },
+        scheduledDate: scheduledDateTime.toISOString(),
+        inspector: {
+          name: 'Current User',
+          id: 'current-user-id',
+        },
+        communityBoard: '211',
+        details,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        synced: true,
       }
 
       // Try to add to Microsoft Calendar first

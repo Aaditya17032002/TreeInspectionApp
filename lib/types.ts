@@ -1,9 +1,4 @@
-import { ReactNode } from "react";
-
 export interface Inspection {
-  description: ReactNode;
-  address: ReactNode;
-  timeAgo: ReactNode;
   id: string;
   title: string;
   status: 'Pending' | 'In-Progress' | 'Completed';

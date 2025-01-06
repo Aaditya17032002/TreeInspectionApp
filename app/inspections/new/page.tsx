@@ -103,9 +103,6 @@ export default function NewInspectionPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         synced: false,
-        description: '',
-        address: '',
-        timeAgo: ''
       }
 
       await saveInspection(inspection, images)
