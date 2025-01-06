@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useMsal } from "@azure/msal-react"
 import { BottomNav } from '../layout/bottom-nav'
+import { cn } from '../../lib/utils'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -57,10 +58,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const showNavbar = accounts.length > 0 && pathname !== '/login'
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <main className={`flex-1 overflow-y-auto ${showNavbar && !isMobile ? 'md:ml-20 lg:ml-64' : ''}`}>
-        {children}
-      </main>
+    <div className="flex min-h-screen bg-gray-100">
       {showNavbar && (
         <BottomNav
           isMobile={isMobile}
@@ -68,6 +66,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           setIsOpen={setIsSideNavOpen}
         />
       )}
+      <main 
+        className={cn(
+          "flex-1 transition-all duration-300 ease-in-out",
+          !isMobile && showNavbar && (isSideNavOpen ? "ml-64" : "ml-20")
+        )}
+      >
+        {children}
+      </main>
     </div>
   )
 }

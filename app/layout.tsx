@@ -27,16 +27,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           <ProtectedRoute>
-            <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-              <div className="flex-1 transition-all duration-300 ease-in-out">
-                <main className="min-h-screen w-full">
-                  {children}
-                </main>
-              </div>
-              <NotificationToast />
-              <InstallPrompt />
-              <ServiceWorkerRegister />
-            </div>
+            {children}
+            <NotificationToast />
+            <InstallPrompt />
+            <ServiceWorkerRegister />
           </ProtectedRoute>
           <Toaster />
         </Providers>

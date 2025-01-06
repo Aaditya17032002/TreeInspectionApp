@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, Map, Calendar, FileText, MoreHorizontal, Bell, Settings, LogOut } from 'lucide-react'
+import { Home, Map, Calendar, FileText, MoreHorizontal, Bell, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '../../lib/utils'
@@ -8,6 +8,7 @@ import { useToast } from "../../components/ui/use-toast"
 import { useState } from 'react'
 import { useMsal } from "@azure/msal-react"
 import { MoreSheet } from './more-sheet'
+import { Button } from '../ui/button'
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
@@ -101,7 +102,21 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
             isOpen ? "w-64" : "w-20"
           )}
         >
-          <div className="flex flex-col h-full py-4">
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-end p-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(!isOpen)}
+                className="rounded-full"
+              >
+                {isOpen ? (
+                  <ChevronLeft className="h-5 w-5" />
+                ) : (
+                  <ChevronRight className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
             <div className="flex-1 overflow-y-auto px-4 space-y-2">
               <NavLinks />
               <Link
@@ -125,7 +140,7 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
                 {isOpen && <span>Settings</span>}
               </Link>
             </div>
-            <div className="px-4 mt-auto">
+            <div className="px-4 py-4 border-t">
               <button
                 onClick={handleLogout}
                 className={cn(
