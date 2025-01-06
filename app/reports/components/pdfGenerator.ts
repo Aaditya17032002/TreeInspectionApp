@@ -32,19 +32,54 @@ export const generatePDF = (inspections: Inspection[], filter: string) => {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
 
-  const headers = [['ID', 'Title', 'Status', 'Date']]
-  const data = inspections.map(inspection => [
-    inspection.id,
-    inspection.title,
-    inspection.status,
-    new Date(inspection.scheduledDate).toLocaleDateString()
-  ])
+  inspections.forEach((inspection, index) => {
+    if (index > 0) {
+      doc.addPage()
+    }
 
-  // @ts-ignore
-  doc.autoTable({
-    startY: 110,
-    head: headers,
-    body: data,
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(14)
+    doc.text(`Inspection #${inspection.id}`, 20, 20)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+
+    const details = [
+      ['Title', inspection.title],
+      ['Status', inspection.status],
+      ['Date', new Date(inspection.scheduledDate).toLocaleDateString()],
+      ['Location', inspection.location.address],
+      ['Inspector', inspection.inspector.name],
+      ['Community Board', inspection.communityBoard],
+    ]
+
+    // @ts-ignore
+    doc.autoTable({
+      startY: 30,
+      head: [['Field', 'Value']],
+      body: details,
+    })
+
+    // Add images if available
+    if (inspection.images && inspection.images.length > 0) {
+      const imageStartY = (doc as any).lastAutoTable.finalY + 10
+      doc.text('Inspection Images:', 20, imageStartY)
+
+      inspection.images.forEach((img, imgIndex) => {
+        try {
+          doc.addImage(
+            `data:image/jpeg;base64,${img}`,
+            'JPEG',
+            20,
+            imageStartY + 10 + (imgIndex * 60),
+            40,
+            40
+          )
+        } catch (error) {
+          console.error('Error adding image to PDF:', error)
+        }
+      })
+    }
   })
 
   // Footer
@@ -59,3 +94,4 @@ export const generatePDF = (inspections: Inspection[], filter: string) => {
   // Save the PDF
   doc.save(`tree-inspections-report-${new Date().toISOString().split('T')[0]}.pdf`)
 }
+

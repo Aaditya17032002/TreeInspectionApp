@@ -192,3 +192,4 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     </Dialog>
   )
 }
+

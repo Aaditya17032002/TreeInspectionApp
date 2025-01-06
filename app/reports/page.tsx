@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { FileText, Download, Filter, FileDown } from 'lucide-react'
 import { Card } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
@@ -16,15 +16,14 @@ import { Inspection } from '../../lib/types'
 import { Badge } from '../../components/ui/badge'
 import { generatePDF } from './components/pdfGenerator'
 import { ReportPreview } from './report-preview'
+import { useLongPress } from '../../lib/hooks/use-long-press'
 
 export default function ReportsPage() {
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null)
-  const [touchStartTime, setTouchStartTime] = useState<number>(0)
-  const [touchStartY, setTouchStartY] = useState<number>(0)
-  const [isTouchMove, setIsTouchMove] = useState(false)
+  const [pressedCardId, setPressedCardId] = useState<string | null>(null)
 
   useEffect(() => {
     loadInspections()
@@ -41,29 +40,9 @@ export default function ReportsPage() {
     }
   }
 
-  const handleTouchStart = useCallback((e: React.TouchEvent, inspection: Inspection) => {
-    setTouchStartTime(Date.now())
-    setTouchStartY(e.touches[0].clientY)
-    setIsTouchMove(false)
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const moveDistance = Math.abs(e.touches[0].clientY - touchStartY)
-    if (moveDistance > 10) {
-      setIsTouchMove(true)
-    }
-  }, [touchStartY])
-
-  const handleTouchEnd = useCallback((inspection: Inspection) => {
-    const touchDuration = Date.now() - touchStartTime
-    if (touchDuration > 500 && !isTouchMove) {
-      setSelectedInspection(inspection)
-    }
-  }, [touchStartTime, isTouchMove])
-
   const filteredInspections = inspections.filter(inspection => {
     if (filter === 'all') return true
-    return inspection.status.toLowerCase() === filter
+    return inspection.status.toLowerCase() === filter.toLowerCase()
   })
 
   const generateReport = () => {
@@ -104,6 +83,14 @@ export default function ReportsPage() {
     }
   }
 
+  const bind = useLongPress<Inspection>((inspection) => {
+    setSelectedInspection(inspection)
+  }, {
+    threshold: 500,
+    onStart: (inspection) => setPressedCardId(inspection.id),
+    onEnd: () => setPressedCardId(null),
+  })
+
   return (
     <>
       <main className="pb-16 md:pb-0 min-h-screen bg-background">
@@ -114,9 +101,62 @@ export default function ReportsPage() {
           </div>
         </header>
 
-        <div className="p-4 space-y-4 pb-24">
+        <div className="p-4 space-y-4">
           <Card className="p-4">
-            {/* ... Stats and filter section remains the same ... */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <span className="font-medium text-foreground">Filter by Status</span>
+              </div>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <StatCard
+                  title="Total Inspections"
+                  value={filteredInspections.length}
+                />
+                <StatCard
+                  title="Pending"
+                  value={filteredInspections.filter(i => i.status === 'Pending').length}
+                />
+                <StatCard
+                  title="Completed"
+                  value={filteredInspections.filter(i => i.status === 'Completed').length}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white" 
+                  onClick={generateReport}
+                  disabled={filteredInspections.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download JSON
+                </Button>
+                
+                <Button 
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white" 
+                  onClick={() => handleGeneratePDF()}
+                  disabled={filteredInspections.length === 0}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+              </div>
+            </div>
           </Card>
 
           <div className="space-y-4">
@@ -126,40 +166,34 @@ export default function ReportsPage() {
                 <div className="h-4 bg-muted rounded w-3/4" />
               </Card>
             ) : (
-              <div className="space-y-4 overflow-visible pb-16">
-                {filteredInspections.map(inspection => (
-                  <Card 
-                    key={inspection.id} 
-                    className="p-4 transition-colors touch-pan-y"
-                    onTouchStart={(e) => handleTouchStart(e, inspection)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={() => handleTouchEnd(inspection)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-purple-600 dark:text-purple-400">
-                            #{inspection.id}
-                          </span>
-                          <Badge variant={
-                            inspection.status === 'Pending' ? 'secondary' :
-                            inspection.status === 'In-Progress' ? 'default' : 'destructive'
-                          }>
-                            {inspection.status}
-                          </Badge>
-                        </div>
-                        <h3 className="font-medium text-foreground">{inspection.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {inspection.location.address}
-                        </p>
+              filteredInspections.map(inspection => (
+                <Card 
+                  key={inspection.id} 
+                  className={`p-4 transition-colors ${pressedCardId === inspection.id ? 'bg-accent' : ''}`}
+                  {...bind(inspection)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-purple-600 dark:text-purple-400">#{inspection.id}</span>
+                        <Badge variant={
+                          inspection.status === 'Pending' ? 'secondary' :
+                          inspection.status === 'In-Progress' ? 'default' : 'destructive'
+                        }>
+                          {inspection.status}
+                        </Badge>
                       </div>
-                      <time className="text-sm text-muted-foreground">
-                        {new Date(inspection.scheduledDate).toLocaleDateString()}
-                      </time>
+                      <h3 className="font-medium text-foreground">{inspection.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {inspection.location.address}
+                      </p>
                     </div>
-                  </Card>
-                ))}
-              </div>
+                    <time className="text-sm text-muted-foreground">
+                      {new Date(inspection.scheduledDate).toLocaleDateString()}
+                    </time>
+                  </div>
+                </Card>
+              ))
             )}
           </div>
         </div>
@@ -174,6 +208,15 @@ export default function ReportsPage() {
         />
       )}
     </>
+  )
+}
+
+function StatCard({ title, value }: { title: string; value: number }) {
+  return (
+    <Card className="p-4">
+      <h3 className="text-sm text-muted-foreground">{title}</h3>
+      <p className="text-2xl font-bold mt-1 text-foreground">{value}</p>
+    </Card>
   )
 }
 

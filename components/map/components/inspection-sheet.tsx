@@ -1,17 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../../components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader } from "../../../components/ui/sheet"
 import { Button } from "../../../components/ui/button"
 import { MapPin, Calendar, User, Building2, FileText, ArrowLeft, TreeDeciduous } from 'lucide-react'
 import type { Inspection } from "../../../lib/types"
-import { cn } from "../../../lib/utils"
 import { getAddressFromCoordinates, syncPendingAddresses } from '../../../lib/services/geolocation'
 import { ImageViewer } from "../../../components/ui/image-viewer"
+import { Badge } from '../../../components/ui/badge'
 
 interface InspectionSheetProps {
-  inspection: Inspection | null;
-  onClose: () => void;
+  inspection: Inspection | null
+  onClose: () => void
 }
 
 export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
@@ -64,76 +64,97 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
 
   return (
     <>
-      <Sheet open={!!inspection} onOpenChange={onClose}>
+      <Sheet open={!!inspection} onOpenChange={() => onClose()}>
         <SheetContent 
           side="bottom" 
-          className={cn(
-            "h-[90vh] p-0 bg-background",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-            "duration-300 ease-in-out"
-          )}
+          className="h-[90vh] p-0 bg-white"
         >
           <div className="flex flex-col h-full">
-            <div className="flex flex-col gap-4 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background">
-              <div className="flex items-center gap-2 p-4 border-b backdrop-blur-sm">
-                <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-accent">
-                  <ArrowLeft className="h-6 w-6 text-foreground" />
-                </Button>
-                <SheetTitle className="text-xl text-foreground">Inspection Details</SheetTitle>
+            <div className="relative bg-gradient-to-b from-purple-500 to-purple-100 pb-8">
+              <div className="absolute inset-0 overflow-hidden">
+                <TreeDeciduous className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300/20 h-48 w-48" />
               </div>
 
-              <div className="px-4 pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 bg-purple-100/80 dark:bg-purple-900/80 p-3 rounded-lg backdrop-blur-sm">
-                    <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                    <span className="text-xl font-bold text-purple-600 dark:text-purple-300">
-                      #{inspection.id}
-                    </span>
+              <SheetHeader className="relative border-b border-white/20 backdrop-blur-sm">
+                <div className="flex items-center gap-2 p-4">
+                  <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20">
+                    <ArrowLeft className="h-6 w-6" />
+                  </Button>
+                  <h2 className="text-xl font-semibold text-white">Inspection Details</h2>
+                </div>
+              </SheetHeader>
+
+              <div className="relative px-6 pt-2">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+                      Complaint #{inspection.id}
+                    </h1>
+                    <Badge variant="outline" className="bg-white/90 text-purple-600 border-none">
+                      {inspection.status}
+                    </Badge>
                   </div>
-                  <div className="inline-block px-4 py-1 text-sm bg-purple-100/80 dark:bg-purple-900/80 backdrop-blur-sm text-purple-700 dark:text-purple-300 rounded-full font-medium">
-                    {inspection.status}
-                  </div>
+                  <h2 className="text-white/90 font-medium">
+                    {inspection.title}
+                  </h2>
                 </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="p-4 space-y-6">
-                <h3 className="text-xl font-semibold text-foreground">{inspection.title}</h3>
-
-                <div className="space-y-6">
-                  <InfoItem 
-                    icon={MapPin} 
-                    label="Location" 
+              <div className="px-6 -mt-4">
+                <div className="bg-white rounded-t-3xl shadow-sm p-6 space-y-6">
+                  <InfoItem
+                    icon={MapPin}
+                    label="Location"
                     value={
                       <>
                         {currentAddress}
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-gray-500 mt-1">
                           Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
                         </div>
                       </>
                     }
                   />
-                  <InfoItem icon={Calendar} label="Scheduled Date" value={new Date(inspection.scheduledDate).toLocaleString()} />
-                  <InfoItem icon={User} label="Inspector" value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`} />
-                  <InfoItem icon={Building2} label="Community Board" value={inspection.communityBoard} />
-                  <InfoItem icon={FileText} label="Details" value={inspection.details} />
+
+                  <InfoItem
+                    icon={Calendar}
+                    label="Scheduled Date"
+                    value={new Date(inspection.scheduledDate).toLocaleString()}
+                  />
+
+                  <InfoItem
+                    icon={User}
+                    label="Inspector"
+                    value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`}
+                  />
+
+                  <InfoItem
+                    icon={Building2}
+                    label="Community Board"
+                    value={inspection.communityBoard}
+                  />
+
+                  <InfoItem
+                    icon={FileText}
+                    label="Details"
+                    value={inspection.details}
+                  />
 
                   {inspection.images && inspection.images.length > 0 && (
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-foreground">Images</h4>
-                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                      <h3 className="text-lg font-semibold text-gray-900">Images</h3>
+                      <div className="grid grid-cols-2 gap-2">
                         {inspection.images.map((img, index) => (
                           <div 
-                            key={index} 
-                            className="relative aspect-square cursor-pointer"
+                            key={index}
+                            className="relative cursor-pointer aspect-square"
                             onClick={() => setSelectedImageIndex(index)}
                           >
-                            <img 
+                            <img
                               src={`data:image/jpeg;base64,${img}`}
                               alt={`Inspection image ${index + 1}`}
-                              className="rounded-lg object-cover w-full h-full hover:opacity-90 transition-opacity"
+                              className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
                             />
                           </div>
                         ))}
@@ -144,12 +165,12 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
               </div>
             </div>
 
-            <div className="p-4 border-t bg-background">
+            <div className="p-4 border-t bg-white">
               <div className="flex gap-3">
-                <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800">
+                <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
                   Update Status
                 </Button>
-                <Button variant="outline" className="flex-1 border-border text-foreground hover:bg-accent">
+                <Button variant="outline" className="flex-1">
                   Add Note
                 </Button>
               </div>
@@ -168,15 +189,27 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
   )
 }
 
-function InfoItem({ icon: Icon, label, value }: { icon: any; label: string; value: string | JSX.Element }) {
+function InfoItem({ 
+  icon: Icon, 
+  label, 
+  value 
+}: { 
+  icon: any
+  label: string
+  value: React.ReactNode
+}) {
   return (
-    <div className="flex gap-4">
-      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
-        <Icon className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+    <div className="flex gap-4 items-start">
+      <div className="rounded-full bg-purple-100 p-3 flex-shrink-0">
+        <Icon className="h-6 w-6 text-purple-600" />
       </div>
-      <div>
-        <h4 className="font-semibold text-foreground">{label}</h4>
-        <p className="text-muted-foreground">{value}</p>
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          {label}
+        </h3>
+        <div className="text-gray-600">
+          {value}
+        </div>
       </div>
     </div>
   )

@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '../../../components/ui/button'
 import { ChevronLeft, MapPin, Calendar, User, Building2, FileText, TreeDeciduous } from 'lucide-react'
 import { Badge } from '../../../components/ui/badge'
-import { getInspection, updateInspectionStatus, initDB } from '../../../lib/db'
+import { getInspection, updateInspectionStatus } from '../../../lib/db'
 import { Inspection } from '../../../lib/types'
-import { cn } from '../../../lib/utils'
 import { ImageViewer } from '../../../components/ui/image-viewer'
+import { getAddressFromCoordinates } from '../../../lib/services/geolocation'
+import { useToast } from '../../../components/ui/use-toast'
 import {
   Select,
   SelectContent,
@@ -16,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select"
-import { useToast } from "../../../components/ui/use-toast"
-import { getAddressFromCoordinates } from '../../../lib/services/geolocation'
 
 export default function InspectionDetailsPage() {
   const params = useParams()
@@ -31,7 +30,6 @@ export default function InspectionDetailsPage() {
   useEffect(() => {
     const loadInspection = async () => {
       try {
-        await initDB()
         const data = await getInspection(params.id as string)
         setInspection(data)
         if (data) {
@@ -77,25 +75,12 @@ export default function InspectionDetailsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-2 text-foreground hover:bg-accent"
-            onClick={() => router.back()}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-        </header>
-        <div className="p-4 animate-pulse">
-          <div className="h-6 bg-muted rounded w-1/3 mb-2" />
-          <div className="h-4 bg-muted rounded w-1/2 mb-4" />
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 bg-muted rounded" />
-            ))}
+      <main className="min-h-screen bg-white">
+        <div className="animate-pulse">
+          <div className="h-48 bg-purple-100" />
+          <div className="p-4 space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-3/4" />
+            <div className="h-4 bg-gray-200 rounded w-1/2" />
           </div>
         </div>
       </main>
@@ -104,20 +89,9 @@ export default function InspectionDetailsPage() {
 
   if (!inspection) {
     return (
-      <main className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-2 text-foreground hover:bg-accent"
-            onClick={() => router.back()}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-        </header>
+      <main className="min-h-screen bg-white">
         <div className="p-4 text-center">
-          <p className="text-muted-foreground">Inspection not found</p>
+          <p className="text-gray-500">Inspection not found</p>
         </div>
       </main>
     )
@@ -125,47 +99,50 @@ export default function InspectionDetailsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-background pb-16 md:pb-0">
-        <div className="bg-gradient-to-b from-purple-100 to-white dark:from-purple-900 dark:to-background">
-          <header className="sticky top-0 z-10 px-4 py-2 border-b backdrop-blur-sm">
+      <main className="min-h-screen bg-white">
+        <div className="relative bg-gradient-to-b from-purple-500 to-purple-100 pb-8">
+          <div className="absolute inset-0 overflow-hidden">
+            <TreeDeciduous className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300/20 h-48 w-48" />
+          </div>
+          
+          <header className="relative">
             <Button
               variant="ghost"
               size="sm"
-              className="mb-2 text-foreground hover:bg-accent"
+              className="m-4 text-white hover:bg-white/20"
               onClick={() => router.back()}
             >
-              <ChevronLeft className="mr-1 h-4 w-4" />
+              <ChevronLeft className="h-5 w-5 mr-1" />
               Back
             </Button>
           </header>
 
-          <div className="px-4 pb-4">
-            <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-purple-100/80 dark:bg-purple-900/80 p-3 rounded-lg backdrop-blur-sm">
-                  <TreeDeciduous className="h-5 w-5 text-purple-600 dark:text-purple-300" />
-                  <h1 className="text-xl font-bold text-purple-600 dark:text-purple-300">
-                    Complaint #{inspection.id}
-                  </h1>
-                </div>
-                <Badge variant="secondary" className="bg-purple-100/80 dark:bg-purple-900/80 backdrop-blur-sm text-purple-700 dark:text-purple-300">
+          <div className="relative px-6 pt-2">
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-baseline justify-between">
+                <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
+                  Complaint #{inspection.id}
+                </h1>
+                <Badge variant="outline" className="bg-white/90 text-purple-600 border-none">
                   {inspection.status}
                 </Badge>
               </div>
-              <p className="mt-1 text-muted-foreground">{inspection.title}</p>
+              <h2 className="text-white/90 font-medium">
+                {inspection.title}
+              </h2>
             </div>
           </div>
         </div>
 
-        <div className="px-4 pb-4">
-          <div className="space-y-6 rounded-lg bg-card p-4">
+        <div className="px-6 -mt-4">
+          <div className="bg-white rounded-t-3xl shadow-sm p-6 space-y-6">
             <InfoItem
               icon={MapPin}
               label="Location"
               value={
                 <>
                   {currentAddress}
-                  <div className="text-sm text-muted-foreground mt-1">
+                  <div className="text-sm text-gray-500 mt-1">
                     Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
                   </div>
                 </>
@@ -194,54 +171,50 @@ export default function InspectionDetailsPage() {
               icon={FileText}
               label="Details"
               value={inspection.details}
-              className="whitespace-pre-line"
             />
 
             {inspection.images && inspection.images.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-medium text-foreground mb-2">Images</h3>
-                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">Images</h3>
+                <div className="grid grid-cols-2 gap-2">
                   {inspection.images.map((img, index) => (
                     <div 
                       key={index}
-                      className="relative cursor-pointer"
+                      className="relative cursor-pointer aspect-square"
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img
                         src={`data:image/jpeg;base64,${img}`}
                         alt={`Inspection image ${index + 1}`}
-                        className="w-full h-40 object-cover rounded-lg hover:opacity-90 transition-opacity"
+                        className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
                       />
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
 
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">Update Status:</span>
-              <Select
-                value={inspection.status}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger className="w-[180px] bg-background text-foreground">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="bg-background text-foreground">
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="In-Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="pt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900">Update Status:</span>
+                <Select
+                  value={inspection.status}
+                  onValueChange={handleStatusChange}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In-Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                Add Note
+              </Button>
             </div>
-            <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800">
-              Update Status
-            </Button>
-            <Button variant="outline" className="w-full border-border text-foreground hover:bg-accent">
-              Add Note
-            </Button>
           </div>
         </div>
       </main>
@@ -259,22 +232,24 @@ export default function InspectionDetailsPage() {
 function InfoItem({ 
   icon: Icon, 
   label, 
-  value, 
-  className 
+  value 
 }: { 
   icon: any
   label: string
   value: React.ReactNode
-  className?: string
 }) {
   return (
-    <div className="flex gap-3">
-      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
-        <Icon className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+    <div className="flex gap-4 items-start">
+      <div className="rounded-full bg-purple-100 p-3 flex-shrink-0">
+        <Icon className="h-6 w-6 text-purple-600" />
       </div>
-      <div>
-        <div className="font-medium text-foreground">{label}</div>
-        <div className={cn("mt-1 text-muted-foreground", className)}>{value}</div>
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          {label}
+        </h3>
+        <div className="text-gray-600">
+          {value}
+        </div>
       </div>
     </div>
   )

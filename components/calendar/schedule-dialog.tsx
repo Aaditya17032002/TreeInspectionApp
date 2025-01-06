@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, X } from 'lucide-react'
+import { CalendarIcon, Clock, X } from 'lucide-react'
 import { format, addHours, setHours, setMinutes } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
@@ -15,6 +15,7 @@ import { Inspection } from '../../lib/types'
 import { addToOutlookCalendar } from '../../lib/services/microsoft-calendar'
 import { useToast } from '../../components/ui/use-toast'
 import { msalInstance } from '../../lib/msal-config'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 
 interface ScheduleDialogProps {
   open: boolean
@@ -31,6 +32,7 @@ export function ScheduleDialog({
 }: ScheduleDialogProps) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState<Date | undefined>(initialDate)
+  const [time, setTime] = useState<string>('09:00') // Default to 9:00 AM
   const [location, setLocation] = useState('')
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
@@ -78,18 +80,18 @@ export function ScheduleDialog({
     }
   }
 
-  const getScheduledDateTime = (selectedDate: Date) => {
-    // Set default time to 9:00 AM
-    return setMinutes(setHours(selectedDate, 9), 0)
+  const getScheduledDateTime = (selectedDate: Date, selectedTime: string) => {
+    const [hours, minutes] = selectedTime.split(':').map(Number)
+    return setMinutes(setHours(selectedDate, hours), minutes)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!date || !title || !location) return
+    if (!date || !title || !location || !time) return
 
     setLoading(true)
     try {
-      const scheduledDateTime = getScheduledDateTime(date)
+      const scheduledDateTime = getScheduledDateTime(date, time)
       const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
         status: 'Pending' as const,
@@ -155,6 +157,7 @@ export function ScheduleDialog({
       onOpenChange(false)
       setTitle('')
       setDate(undefined)
+      setTime('09:00')
       setLocation('')
       setDetails('')
     } catch (error) {
@@ -221,6 +224,24 @@ export function ScheduleDialog({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="time">Time</Label>
+            <div className="flex items-center">
+              <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+              <Select value={time} onValueChange={setTime}>
+                <SelectTrigger className="w-full rounded-xl">
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                    <SelectItem key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>
+                      {format(setHours(new Date(), hour), 'h:mm a')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
