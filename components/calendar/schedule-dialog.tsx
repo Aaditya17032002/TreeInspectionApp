@@ -32,21 +32,19 @@ export function ScheduleDialog({
 }: ScheduleDialogProps) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState<Date | undefined>(initialDate)
-  const [time, setTime] = useState<string>('09:00') // Default to 9:00 AM
+  const [time, setTime] = useState<string>('09:00')
   const [location, setLocation] = useState('')
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
   const [microsoftAuthChecked, setMicrosoftAuthChecked] = useState(false)
   const { toast } = useToast()
 
-  // Update date when initialDate changes
   useEffect(() => {
     if (initialDate) {
       setDate(initialDate)
     }
   }, [initialDate])
 
-  // Check Microsoft authentication status
   useEffect(() => {
     if (open && !microsoftAuthChecked) {
       const accounts = msalInstance.getAllAccounts()
@@ -80,9 +78,12 @@ export function ScheduleDialog({
     }
   }
 
-  const getScheduledDateTime = (selectedDate: Date, selectedTime: string) => {
-    const [hours, minutes] = selectedTime.split(':').map(Number)
-    return setMinutes(setHours(selectedDate, hours), minutes)
+  const resetForm = () => {
+    setTitle('')
+    setDate(undefined)
+    setTime('09:00')
+    setLocation('')
+    setDetails('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +92,8 @@ export function ScheduleDialog({
 
     setLoading(true)
     try {
-      const scheduledDateTime = getScheduledDateTime(date, time)
+      const scheduledDateTime = setMinutes(setHours(date, parseInt(time.split(':')[0])), parseInt(time.split(':')[1]))
+      
       const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
         status: 'Pending' as const,
@@ -112,7 +114,10 @@ export function ScheduleDialog({
         synced: true,
       }
 
-      // Try to add to Microsoft Calendar first
+      // First save to our system
+      await onSchedule(inspection)
+
+      // Then try to sync with Microsoft Calendar if authenticated
       const accounts = msalInstance.getAllAccounts()
       if (accounts.length > 0) {
         try {
@@ -134,32 +139,27 @@ export function ScheduleDialog({
               content: details || 'No additional details provided.',
             },
           })
+          toast({
+            title: "Success",
+            description: "Inspection scheduled and synced with Microsoft Calendar",
+          })
         } catch (error) {
-          console.error('Failed to add to Microsoft Calendar:', error)
+          console.error('Failed to sync with Microsoft Calendar:', error)
           toast({
             title: "Warning",
-            description: "Failed to sync with Microsoft Calendar. The inspection will still be scheduled.",
-            variant: "destructive",
+            description: "Calendar sync failed, but inspection was scheduled successfully",
+            variant: "warning",
           })
         }
+      } else {
+        toast({
+          title: "Success",
+          description: "Inspection scheduled successfully",
+        })
       }
 
-      // Schedule the inspection in our system
-      await onSchedule(inspection)
-
-      toast({
-        title: "Success",
-        description: accounts.length > 0 
-          ? "Inspection scheduled and synced with Microsoft Calendar"
-          : "Inspection scheduled successfully",
-      })
-
+      resetForm()
       onOpenChange(false)
-      setTitle('')
-      setDate(undefined)
-      setTime('09:00')
-      setLocation('')
-      setDetails('')
     } catch (error) {
       console.error('Error scheduling inspection:', error)
       toast({
@@ -181,13 +181,17 @@ export function ScheduleDialog({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                resetForm()
+                onOpenChange(false)
+              }}
               className="rounded-full text-white hover:bg-white/20"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
@@ -200,6 +204,7 @@ export function ScheduleDialog({
               required
             />
           </div>
+
           <div className="space-y-2">
             <Label>Date</Label>
             <Popover>
@@ -225,11 +230,12 @@ export function ScheduleDialog({
               </PopoverContent>
             </Popover>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="time">Time</Label>
             <div className="flex items-center">
               <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-              <Select value={time} onValueChange={setTime} >
+              <Select value={time} onValueChange={setTime}>
                 <SelectTrigger className="w-full rounded-xl">
                   <SelectValue placeholder="Select time" />
                 </SelectTrigger>
@@ -243,6 +249,7 @@ export function ScheduleDialog({
               </Select>
             </div>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
             <Input
@@ -254,6 +261,7 @@ export function ScheduleDialog({
               required
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="details">Details</Label>
             <Textarea
@@ -265,7 +273,6 @@ export function ScheduleDialog({
             />
           </div>
           
-          {/* Microsoft Calendar Integration */}
           {msalInstance.getAllAccounts().length === 0 && (
             <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
               <div className="text-sm">
@@ -288,7 +295,10 @@ export function ScheduleDialog({
               type="button"
               variant="outline"
               className="flex-1 rounded-xl"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                resetForm()
+                onOpenChange(false)
+              }}
             >
               Cancel
             </Button>
