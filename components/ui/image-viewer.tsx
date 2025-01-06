@@ -28,11 +28,14 @@ export function ImageViewer({
     })
   }, [images])
 
-  const [currentIndex, setCurrentIndex] = useState(initialIndex)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    setCurrentIndex(initialIndex)
-  }, [initialIndex])
+    if (open) {
+      const validIndex = Math.min(Math.max(initialIndex, 0), uniqueImages.length - 1)
+      setCurrentIndex(validIndex)
+    }
+  }, [open, initialIndex, uniqueImages])
 
   const showNext = () => {
     setCurrentIndex((prev) => (prev + 1) % uniqueImages.length)
@@ -42,7 +45,7 @@ export function ImageViewer({
     setCurrentIndex((prev) => (prev - 1 + uniqueImages.length) % uniqueImages.length)
   }
 
-  if (!open) return null
+  if (!open || uniqueImages.length === 0) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

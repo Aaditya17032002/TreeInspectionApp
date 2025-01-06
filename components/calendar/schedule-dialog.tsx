@@ -92,7 +92,10 @@ export function ScheduleDialog({
 
     setLoading(true)
     try {
-      const scheduledDateTime = setMinutes(setHours(date, parseInt(time.split(':')[0])), parseInt(time.split(':')[1]))
+      const scheduledDateTime = setMinutes(
+        setHours(date, parseInt(time.split(':')[0])), 
+        parseInt(time.split(':')[1])
+      )
       
       const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
@@ -111,7 +114,7 @@ export function ScheduleDialog({
         details,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        synced: true,
+        synced: false,
       }
 
       // First save to our system
@@ -120,43 +123,32 @@ export function ScheduleDialog({
       // Then try to sync with Microsoft Calendar if authenticated
       const accounts = msalInstance.getAllAccounts()
       if (accounts.length > 0) {
-        try {
-          await addToOutlookCalendar({
-            subject: title,
-            start: {
-              dateTime: scheduledDateTime.toISOString(),
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            },
-            end: {
-              dateTime: addHours(scheduledDateTime, 1).toISOString(),
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            },
-            location: {
-              displayName: location,
-            },
-            body: {
-              contentType: 'text',
-              content: details || 'No additional details provided.',
-            },
-          })
-          toast({
-            title: "Success",
-            description: "Inspection scheduled and synced with Microsoft Calendar",
-          })
-        } catch (error) {
-          console.error('Failed to sync with Microsoft Calendar:', error)
-          toast({
-            title: "Warning",
-            description: "Calendar sync failed, but inspection was scheduled successfully",
-            variant: "warning",
-          })
-        }
-      } else {
-        toast({
-          title: "Success",
-          description: "Inspection scheduled successfully",
+        const endDateTime = addHours(scheduledDateTime, 2) // Consistently use 2 hours duration
+        
+        await addToOutlookCalendar({
+          subject: title,
+          start: {
+            dateTime: scheduledDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          end: {
+            dateTime: endDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          location: {
+            displayName: location,
+          },
+          body: {
+            contentType: 'text',
+            content: details || 'No additional details provided.',
+          },
         })
       }
+
+      toast({
+        title: "Success",
+        description: "Inspection scheduled successfully",
+      })
 
       resetForm()
       onOpenChange(false)
