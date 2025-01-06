@@ -11,7 +11,6 @@ import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
-import { getUserInfo } from '../../../lib/msal-utils'
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -128,11 +127,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         return;
       }
 
-      const userInfo = getUserInfo();
-      if (!userInfo) {
-        throw new Error('User information not available');
-      }
-
       const inspection: Omit<Inspection, "id"> = {
         title,
         status: 'Pending',
@@ -143,8 +137,8 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         },
         scheduledDate: new Date().toISOString(),
         inspector: {
-          name: userInfo.name,
-          id: userInfo.email,
+          name: 'Meet Desai',
+          id: 'MD001',
         },
         communityBoard: '211',
         details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
@@ -220,7 +214,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
           onOpenChange(newOpen)
         }}
       >
-        <DialogContent className=" fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full">
+        <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>New Inspection</DialogTitle>
           </DialogHeader>
@@ -330,3 +324,4 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
     </>
   )
 }
+
