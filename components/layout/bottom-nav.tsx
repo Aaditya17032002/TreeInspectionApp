@@ -1,13 +1,12 @@
 'use client'
 
-import { Home, Map, Calendar, FileText, MoreHorizontal, Bell, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Home, Map, Calendar, FileText, MoreHorizontal, Bell, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '../../lib/utils'
 import { useToast } from "../../components/ui/use-toast"
 import { useState } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet"
-import { useMsal, useIsAuthenticated } from "@azure/msal-react"
+import { useMsal } from "@azure/msal-react"
 import { MoreSheet } from './more-sheet'
 
 const navigation = [
@@ -27,15 +26,12 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false)
-  const { instance } = useMsal()
-  const isAuthenticated = useIsAuthenticated()
+  const { instance, accounts } = useMsal()
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('isLoggedIn')
-      if (isAuthenticated) {
+      if (accounts.length > 0) {
         await instance.logoutRedirect({
           onRedirectNavigate: () => false
         })
@@ -59,7 +55,6 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
           <Link
             key={item.name}
             href={item.href}
-            onClick={() => setIsSheetOpen(false)}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
               isActive
@@ -106,81 +101,44 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
             isOpen ? "w-64" : "w-20"
           )}
         >
-          <div className="flex justify-end p-4">
-            <button 
-              onClick={() => setIsOpen(!isOpen)} 
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-          <div className="flex flex-col h-[calc(100vh-5rem)] overflow-y-auto px-4 space-y-2">
-            <NavLinks />
-            <Link
-              href="/notifications"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
-                !isOpen && "justify-center"
-              )}
-            >
-              <Bell className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span>Notifications</span>}
-            </Link>
-            <Link
-              href="/settings"
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
-                !isOpen && "justify-center"
-              )}
-            >
-              <Settings className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span>Settings</span>}
-            </Link>
-            <button
-              onClick={handleLogout}
-              className={cn(
-                "mt-auto mb-4 flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg w-full transition-colors",
-                !isOpen && "justify-center"
-              )}
-            >
-              <LogOut className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span>Logout</span>}
-            </button>
+          <div className="flex flex-col h-full py-4">
+            <div className="flex-1 overflow-y-auto px-4 space-y-2">
+              <NavLinks />
+              <Link
+                href="/notifications"
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
+                  !isOpen && "justify-center"
+                )}
+              >
+                <Bell className="h-5 w-5 flex-shrink-0" />
+                {isOpen && <span>Notifications</span>}
+              </Link>
+              <Link
+                href="/settings"
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
+                  !isOpen && "justify-center"
+                )}
+              >
+                <Settings className="h-5 w-5 flex-shrink-0" />
+                {isOpen && <span>Settings</span>}
+              </Link>
+            </div>
+            <div className="px-4 mt-auto">
+              <button
+                onClick={handleLogout}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg w-full transition-colors",
+                  !isOpen && "justify-center"
+                )}
+              >
+                <LogOut className="h-5 w-5 flex-shrink-0" />
+                {isOpen && <span>Logout</span>}
+              </button>
+            </div>
           </div>
         </nav>
-      )}
-
-      {!isMobile && (
-        <button
-          className="fixed top-4 right-4 z-50 p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          onClick={() => setIsSheetOpen(!isSheetOpen)}
-        >
-          {isSheetOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      )}
-
-      {!isMobile && (
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="flex flex-col h-full">
-              <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-              </div>
-              <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-                <NavLinks />
-              </nav>
-              <div className="p-4 border-t">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 w-full text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
       )}
 
       <MoreSheet open={isMoreSheetOpen} onOpenChange={setIsMoreSheetOpen} onLogout={handleLogout} />

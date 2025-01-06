@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { instance } = useMsal();
+  const { instance, accounts } = useMsal();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isSideNavOpen, setIsSideNavOpen] = useState(true);
@@ -27,18 +27,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const result = await instance.handleRedirectPromise();
-        const isAuthenticated = localStorage.getItem("isLoggedIn") === "true";
+        await instance.handleRedirectPromise();
+        const isAuthenticated = accounts.length > 0;
 
-        if (result) {
-          // User has just logged in, redirect to home
-          localStorage.setItem("isLoggedIn", "true");
-          router.push('/');
-        } else if (!isAuthenticated && pathname !== '/login') {
-          // User is not authenticated and not on login page, redirect to login
+        if (!isAuthenticated && pathname !== '/login') {
           router.push('/login');
         } else if (isAuthenticated && pathname === '/login') {
-          // User is authenticated but on login page, redirect to home
           router.push('/');
         }
       } catch (error) {
@@ -50,7 +44,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
 
     checkAuth();
-  }, [router, pathname, instance]);
+  }, [router, pathname, instance, accounts]);
 
   if (isLoading) {
     return (
@@ -60,7 +54,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  const isAuthenticated = localStorage.getItem("isLoggedIn") === "true";
+  const isAuthenticated = accounts.length > 0;
   const showNavbar = isAuthenticated && pathname !== '/login';
   const showBottomNav = showNavbar && isMobile;
   const showSideNav = showNavbar && !isMobile;

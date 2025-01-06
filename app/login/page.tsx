@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
-  const { instance } = useMsal()
+  const { instance, accounts } = useMsal()
 
   useEffect(() => {
     const handleRedirect = async () => {
@@ -21,9 +21,8 @@ export default function LoginPage() {
         const result = await instance.handleRedirectPromise()
         if (result) {
           console.log("Redirect handled successfully")
-          localStorage.setItem("isLoggedIn", "true")
           router.push("/")
-        } else if (localStorage.getItem("isLoggedIn") === "true") {
+        } else if (accounts.length > 0) {
           router.push("/")
         }
       } catch (error) {
@@ -39,7 +38,7 @@ export default function LoginPage() {
     }
 
     handleRedirect()
-  }, [instance, router, toast])
+  }, [instance, router, toast, accounts])
 
   const handleLogin = async () => {
     setLoading(true)
