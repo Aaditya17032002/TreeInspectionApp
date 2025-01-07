@@ -1,13 +1,13 @@
 'use client'
 
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent } from "../../components/ui/dialog"
+import { Button } from "../../components/ui/button"
 import { X, Download, Loader2 } from 'lucide-react'
-import type { Inspection } from "@/lib/types"
+import type { Inspection } from "../../lib/types"
 import { useEffect, useState } from "react"
 import { jsPDF } from "jspdf"
 import 'jspdf-autotable'
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "../../components/ui/use-toast"
 import axios from 'axios'
 
 interface ExtendedJsPDF extends jsPDF {
