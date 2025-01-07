@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent } from "../../components/ui/dialog"
 import { Button } from "../../components/ui/button"
-import { X, Download } from 'lucide-react'
+import { X, Download, Loader2 } from 'lucide-react'
 import type { Inspection } from "../../lib/types"
 import { useEffect, useRef, useState } from "react"
 import jsPDF from 'jspdf'
@@ -21,9 +21,17 @@ interface ReportPreviewProps {
   onDownload: () => void
 }
 
+interface AIReportContent {
+  summary: string;
+  observations: string;
+  recommendations: string;
+}
+
 export function ReportPreview({ inspection, open, onOpenChange, onDownload }: ReportPreviewProps) {
   const [pdfUrl, setPdfUrl] = useState<string>('')
   const [isMobile, setIsMobile] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [aiContent, setAiContent] = useState<AIReportContent | null>(null)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -34,11 +42,54 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    if (!open) return
+  const generateAIReport = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('https://gemini-fastapi-1.onrender.com/generate_report_content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inspection_details: {
+            title: inspection.title,
+            details: inspection.details,
+            status: inspection.status,
+            location: inspection.location,
+            scheduledDate: inspection.scheduledDate,
+          }
+        }),
+      });
 
-    const generatePDF = () => {
-      const doc = new jsPDF() as ExtendedJsPDF
+      if (!response.ok) {
+        throw new Error('Failed to generate AI report');
+      }
+
+      const data = await response.json();
+      // Extract the required fields from the response
+      const aiContent: AIReportContent = {
+        summary: data.summary || '',
+        observations: data.observations || '',
+        recommendations: data.recommendations || '',
+      };
+      setAiContent(aiContent);
+      return aiContent;
+    } catch (error) {
+      console.error('Error generating AI report:', error);
+      return null;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const generatePDF = async () => {
+      // First, generate AI content
+      const aiReport = await generateAIReport();
+      
+      const doc = new jsPDF() as ExtendedJsPDF;
       
       // Title
       doc.setFont('helvetica', 'bold')
@@ -93,6 +144,41 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       doc.setFont('helvetica', 'normal')
       const splitDetails = doc.splitTextToSize(inspection.details, 170)
       doc.text(splitDetails, 20, yPos + 20)
+
+      // AI Generated Content
+      if (aiContent) {
+        const aiStartY = yPos + splitDetails.length * 10 + 30;
+        
+        // AI Summary
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(16)
+        doc.text('AI Analysis', 20, aiStartY)
+        
+        doc.setFontSize(14)
+        doc.text('Summary', 20, aiStartY + 10)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(12)
+        const splitSummary = doc.splitTextToSize(aiContent.summary, 170)
+        doc.text(splitSummary, 20, aiStartY + 20)
+
+        // AI Observations
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(14)
+        doc.text('Observations', 20, aiStartY + splitSummary.length * 7 + 25)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(12)
+        const splitObservations = doc.splitTextToSize(aiContent.observations, 170)
+        doc.text(splitObservations, 20, aiStartY + splitSummary.length * 7 + 35)
+
+        // AI Recommendations
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(14)
+        doc.text('Recommendations', 20, aiStartY + splitSummary.length * 7 + splitObservations.length * 7 + 40)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(12)
+        const splitRecommendations = doc.splitTextToSize(aiContent.recommendations, 170)
+        doc.text(splitRecommendations, 20, aiStartY + splitSummary.length * 7 + splitObservations.length * 7 + 50)
+      }
 
       // Images Section
       if (inspection.images && inspection.images.length > 0) {
@@ -160,9 +246,14 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
               onClick={onDownload}
               className="bg-purple-600 hover:bg-purple-700 text-white"
               size={isMobile ? "sm" : "default"}
+              disabled={isGenerating}
             >
-              <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
-              {!isMobile && "Download PDF"}
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
+              )}
+              {!isMobile && (isGenerating ? "Generating..." : "Download AI Report")}
             </Button>
             <Button
               variant="ghost"
