@@ -1,13 +1,13 @@
 'use client'
 
-import { Dialog, DialogContent } from "../../components/ui/dialog"
-import { Button } from "../../components/ui/button"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { X, Download, Loader2 } from 'lucide-react'
-import type { Inspection } from "../../lib/types"
-import { useEffect, useRef, useState } from "react"
-import jsPDF from 'jspdf'
+import type { Inspection } from "@/lib/types"
+import { useEffect, useState } from "react"
+import { jsPDF } from "jspdf"
 import 'jspdf-autotable'
-import { useToast } from "../../components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import axios from 'axios'
 
 interface ExtendedJsPDF extends jsPDF {
@@ -75,11 +75,9 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
           timeout: 10000, // 10 seconds timeout
         });
 
-        // Log the response for debugging
         console.log('Response received from Gemini API:', response.data);
 
         const data = response.data;
-        // Extract and format the required fields from the response
         const aiContent: AIReportContent = {
           summary: formatAIContent(data.summary || '').join('\n'),
           observations: formatAIContent(data.observations || '').join('\n'),
@@ -121,8 +119,9 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     if (!open) return;
 
     const generatePDF = async () => {
-      // First, generate AI content
-      const aiReport = await generateAIReport();
+      if (!aiContent) {
+        await generateAIReport();
+      }
       
       const doc = new jsPDF() as ExtendedJsPDF;
       
@@ -181,7 +180,7 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       doc.text(splitDetails, 20, yPos + 20)
 
       // AI Generated Content
-      if (aiReport) {
+      if (aiContent) {
         const aiStartY = yPos + splitDetails.length * 10 + 30;
         
         // AI Summary
@@ -221,9 +220,9 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
         }
 
         let currentY = aiStartY + 20
-        currentY = addFormattedSection('Summary', aiReport.summary, currentY)
-        currentY = addFormattedSection('Observations', aiReport.observations, currentY + 10)
-        addFormattedSection('Recommendations', aiReport.recommendations, currentY + 10)
+        currentY = addFormattedSection('Summary', aiContent.summary, currentY)
+        currentY = addFormattedSection('Observations', aiContent.observations, currentY + 10)
+        addFormattedSection('Recommendations', aiContent.recommendations, currentY + 10)
       }
 
       // Images Section
@@ -280,7 +279,19 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     }
 
     generatePDF()
-  }, [open, inspection])
+  }, [open, inspection, aiContent])
+
+  const handleDownload = async () => {
+    if (!aiContent) {
+      try {
+        await generateAIReport();
+      } catch (error) {
+        console.error("Error generating AI report:", error);
+        return;
+      }
+    }
+    onDownload();
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -289,7 +300,7 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
           <h2 className="text-xl font-bold text-foreground">Report Preview</h2>
           <div className="flex gap-2">
             <Button
-              onClick={onDownload}
+              onClick={handleDownload}
               className="bg-purple-600 hover:bg-purple-700 text-white"
               size={isMobile ? "sm" : "default"}
               disabled={isGenerating}
