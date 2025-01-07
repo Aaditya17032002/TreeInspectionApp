@@ -16,16 +16,24 @@ export async function rephraseWithPunctuation(text: string): Promise<string> {
         timeout: 10000, // 10 seconds timeout
       });
 
+      // Log the response for debugging
+      console.log('Response received from Gemini API:', response.data);
+
+      // Ensure response contains valid rephrased text
       if (!response.data || typeof response.data !== 'object') {
         throw new Error('Invalid response data received');
       }
 
-      // Extract the rephrased text from the response
-      const rephrasedText = response.data.rephrased_text || response.data.text || response.data.toString();
-      return rephrasedText;
+      // Extract the rephrased text from the response (ensure it's a string)
+      const rephrasedText = response.data.rephrased_text || response.data.text;
+      if (typeof rephrasedText !== 'string') {
+        throw new Error('Rephrased text is not a string');
+      }
+
+      return rephrasedText; // Return the rephrased text
     } catch (error) {
       console.error(`Error rephrasing text (attempt ${retries + 1}):`, error);
-      
+
       if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
         if (retries === MAX_RETRIES - 1) {
           throw new Error('Network error: Unable to connect to the rephrasing service after multiple attempts. Please try again later.');
@@ -40,4 +48,3 @@ export async function rephraseWithPunctuation(text: string): Promise<string> {
 
   throw new Error('Max retries reached. Unable to rephrase text.');
 }
-
