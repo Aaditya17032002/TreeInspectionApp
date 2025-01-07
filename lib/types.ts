@@ -66,3 +66,10 @@ export interface Inspection {
     timestamp: string;
   }
   
+  export interface RephraseResponse {
+    rephrasedText: string;
+    error?: string;
+    details?: string;
+  }
+  
+  
