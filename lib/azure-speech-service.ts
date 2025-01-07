@@ -3,8 +3,8 @@ import { SpeechConfig, AudioConfig, SpeechRecognizer } from 'microsoft-cognitive
 let speechConfig: SpeechConfig | null = null;
 
 try {
-  const subscriptionKey = process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY;
-  const region = process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION;
+  const subscriptionKey = process.env.AZURE_SPEECH_KEY;
+  const region = process.env.AZURE_SPEECH_REGION;
 
   if (subscriptionKey && region) {
     speechConfig = SpeechConfig.fromSubscription(subscriptionKey, region);
