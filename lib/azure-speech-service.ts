@@ -1,5 +1,7 @@
 import { SpeechConfig, AudioConfig, SpeechRecognizer } from 'microsoft-cognitiveservices-speech-sdk';
 
+require('dotenv').config({ path: '.env.local' });
+
 let speechConfig: SpeechConfig | null = null;
 
 try {
