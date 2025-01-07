@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../compo
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Textarea } from "../../../components/ui/textarea"
-import { Label } from "../../../components/ui/label"
+import { Label } from '../../../components/ui/label'
 import { Camera, Loader2, X, Mic, MicOff } from 'lucide-react'
 import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
@@ -59,7 +59,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         addNotification({
           type: 'error',
           title: 'Speech Recognition Error',
-          message: 'Failed to recognize speech. Please try again.',
+          message: 'Speech-to-text is not available. Please check your Azure Speech Service configuration.',
         });
       } finally {
         setIsRecording(false);

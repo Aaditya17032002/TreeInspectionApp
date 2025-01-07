@@ -190,7 +190,7 @@ export function ScheduleDialog({
         console.error('Speech recognition error:', error);
         toast({
           title: "Speech Recognition Error",
-          description: "Failed to recognize speech. Please try again.",
+          description: "Speech-to-text is not available. Please check your Azure Speech Service configuration.",
           variant: "destructive",
         });
       } finally {
