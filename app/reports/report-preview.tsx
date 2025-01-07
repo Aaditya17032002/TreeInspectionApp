@@ -42,6 +42,19 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  const formatAIContent = (content: string): string[] => {
+    const lines = content.split('\n')
+    return lines.map(line => {
+      if (line.startsWith('**') && line.endsWith('**')) {
+        return line.slice(2, -2) // Remove ** from start and end
+      }
+      if (line.match(/^\d+\./)) {
+        return `• ${line.split('. ')[1]}` // Convert numbered list to bullet points
+      }
+      return line
+    })
+  }
+
   const generateAIReport = async () => {
     setIsGenerating(true);
     try {
@@ -66,11 +79,11 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       }
 
       const data = await response.json();
-      // Extract the required fields from the response
+      // Extract and format the required fields from the response
       const aiContent: AIReportContent = {
-        summary: data.summary || '',
-        observations: data.observations || '',
-        recommendations: data.recommendations || '',
+        summary: formatAIContent(data.summary || '').join('\n'),
+        observations: formatAIContent(data.observations || '').join('\n'),
+        recommendations: formatAIContent(data.recommendations || '').join('\n'),
       };
       setAiContent(aiContent);
       return aiContent;
@@ -146,7 +159,7 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       doc.text(splitDetails, 20, yPos + 20)
 
       // AI Generated Content
-      if (aiContent) {
+      if (aiReport) {
         const aiStartY = yPos + splitDetails.length * 10 + 30;
         
         // AI Summary
@@ -154,30 +167,41 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
         doc.setFontSize(16)
         doc.text('AI Analysis', 20, aiStartY)
         
-        doc.setFontSize(14)
-        doc.text('Summary', 20, aiStartY + 10)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(12)
-        const splitSummary = doc.splitTextToSize(aiContent.summary, 170)
-        doc.text(splitSummary, 20, aiStartY + 20)
+        const addFormattedSection = (title: string, content: string, startY: number) => {
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(14)
+          doc.text(title, 20, startY)
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(12)
+          
+          let currentY = startY + 10
+          const lines = content.split('\n')
+          lines.forEach(line => {
+            if (line.startsWith('•')) {
+              doc.text('•', 25, currentY)
+              const bulletText = doc.splitTextToSize(line.slice(2), 160)
+              doc.text(bulletText, 30, currentY)
+              currentY += bulletText.length * 7
+            } else if (line.trim().startsWith('**') && line.trim().endsWith('**')) {
+              doc.setFont('helvetica', 'bold')
+              const boldText = doc.splitTextToSize(line.slice(2, -2), 170)
+              doc.text(boldText, 20, currentY)
+              doc.setFont('helvetica', 'normal')
+              currentY += boldText.length * 7
+            } else {
+              const normalText = doc.splitTextToSize(line, 170)
+              doc.text(normalText, 20, currentY)
+              currentY += normalText.length * 7
+            }
+            currentY += 3 // Add some space between lines
+          })
+          return currentY
+        }
 
-        // AI Observations
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(14)
-        doc.text('Observations', 20, aiStartY + splitSummary.length * 7 + 25)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(12)
-        const splitObservations = doc.splitTextToSize(aiContent.observations, 170)
-        doc.text(splitObservations, 20, aiStartY + splitSummary.length * 7 + 35)
-
-        // AI Recommendations
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(14)
-        doc.text('Recommendations', 20, aiStartY + splitSummary.length * 7 + splitObservations.length * 7 + 40)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(12)
-        const splitRecommendations = doc.splitTextToSize(aiContent.recommendations, 170)
-        doc.text(splitRecommendations, 20, aiStartY + splitSummary.length * 7 + splitObservations.length * 7 + 50)
+        let currentY = aiStartY + 20
+        currentY = addFormattedSection('Summary', aiReport.summary, currentY)
+        currentY = addFormattedSection('Observations', aiReport.observations, currentY + 10)
+        addFormattedSection('Recommendations', aiReport.recommendations, currentY + 10)
       }
 
       // Images Section
