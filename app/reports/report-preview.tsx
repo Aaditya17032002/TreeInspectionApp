@@ -7,6 +7,7 @@ import type { Inspection } from "../../lib/types"
 import { useEffect, useRef, useState } from "react"
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import { useToast } from "../../components/ui/use-toast"
 
 interface ExtendedJsPDF extends jsPDF {
   lastAutoTable?: {
@@ -32,6 +33,7 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
   const [isMobile, setIsMobile] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiContent, setAiContent] = useState<AIReportContent | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -64,18 +66,13 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inspection_details: {
-            title: inspection.title,
-            details: inspection.details,
-            status: inspection.status,
-            location: inspection.location,
-            scheduledDate: inspection.scheduledDate,
-          }
+          description: inspection.details
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate AI report');
+        const errorData = await response.json();
+        throw new Error(`Failed to generate AI report: ${JSON.stringify(errorData)}`);
       }
 
       const data = await response.json();
@@ -89,6 +86,11 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       return aiContent;
     } catch (error) {
       console.error('Error generating AI report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI report. Please try again.",
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsGenerating(false);
