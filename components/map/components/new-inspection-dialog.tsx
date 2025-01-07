@@ -12,6 +12,8 @@ import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/serv
 import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
 import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../../../lib/types/speech-recognition'
+import { debounce } from '../../../lib/utils/debounce'
+import { rephraseWithPunctuation } from '../../../server/gemini'
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -33,12 +35,12 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [isRecognitionSupported, setIsRecognitionSupported] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Check for speech recognition support
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     setIsRecognitionSupported(!!SpeechRecognition);
@@ -48,25 +50,32 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       
+      const debouncedTranscriptUpdate = debounce(async (transcript: string) => {
+        setDetails(prev => {
+          const cursorPosition = textareaRef.current?.selectionStart || prev.length;
+          const textBefore = prev.substring(0, cursorPosition);
+          const textAfter = prev.substring(cursorPosition);
+          return textBefore + transcript + textAfter;
+        });
+      }, 300);
+
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
+            if (!finalTranscript.includes(transcript)) {
+              finalTranscript += transcript;
+            }
           } else {
-            interimTranscript += event.results[i][0].transcript;
+            interimTranscript += transcript;
           }
         }
         
         if (finalTranscript) {
-          setDetails(prev => {
-            const cursorPosition = textareaRef.current?.selectionStart || prev.length;
-            const textBefore = prev.substring(0, cursorPosition);
-            const textAfter = prev.substring(cursorPosition);
-            return textBefore + finalTranscript + textAfter;
-          });
+          debouncedTranscriptUpdate(finalTranscript);
         }
       };
 
@@ -105,6 +114,20 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
+      setIsProcessing(true);
+      try {
+        const rephrasedText = await rephraseWithPunctuation(details);
+        setDetails(rephrasedText);
+      } catch (error) {
+        console.error('Error rephrasing text:', error);
+        addNotification({
+          type: 'error',
+          title: 'Rephrasing Error',
+          message: 'Failed to rephrase the text. Please check your input.',
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     } else {
       try {
         await recognitionRef.current?.start();
@@ -338,6 +361,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
                     size="sm"
                     className={`gap-2 ${isRecording ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
                     onClick={toggleSpeechRecognition}
+                    disabled={isProcessing}
                   >
                     {isRecording ? (
                       <>
@@ -367,6 +391,11 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
                     <div className="animate-pulse">
                       <div className="w-2 h-2 bg-red-500 rounded-full" />
                     </div>
+                  </div>
+                )}
+                {isProcessing && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
                 )}
               </div>
