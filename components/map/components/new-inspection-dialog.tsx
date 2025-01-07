@@ -125,6 +125,8 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
           title: 'Rephrasing Error',
           message: error instanceof Error ? error.message : 'Failed to rephrase the text. Please check your input.',
         });
+        // Fallback: use the original text without rephrasing
+        setDetails(prevDetails => prevDetails);
       } finally {
         setIsProcessing(false);
       }
