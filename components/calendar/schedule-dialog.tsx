@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, Clock, X, Mic, MicOff } from 'lucide-react'
+import { CalendarIcon, Clock, X } from 'lucide-react'
 import { format, addHours, setHours, setMinutes } from 'date-fns'
 import { Dialog, DialogContent, DialogHeader } from '../../components/ui/dialog'
 import { Button } from '../../components/ui/button'
@@ -16,7 +16,6 @@ import { addToOutlookCalendar } from '../../lib/services/microsoft-calendar'
 import { useToast } from '../../components/ui/use-toast'
 import { msalInstance } from '../../lib/msal-config'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { recognizeSpeech } from '../../lib/azure-speech-service'
 
 interface ScheduleDialogProps {
   open: boolean
@@ -38,17 +37,14 @@ export function ScheduleDialog({
   const [details, setDetails] = useState('')
   const [loading, setLoading] = useState(false)
   const [microsoftAuthChecked, setMicrosoftAuthChecked] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
   const { toast } = useToast()
 
-  // Update date when initialDate changes
   useEffect(() => {
     if (initialDate) {
       setDate(initialDate)
     }
   }, [initialDate])
 
-  // Check Microsoft authentication status
   useEffect(() => {
     if (open && !microsoftAuthChecked) {
       const accounts = msalInstance.getAllAccounts()
@@ -82,9 +78,12 @@ export function ScheduleDialog({
     }
   }
 
-  const getScheduledDateTime = (selectedDate: Date, selectedTime: string) => {
-    const [hours, minutes] = selectedTime.split(':').map(Number)
-    return setMinutes(setHours(selectedDate, hours), minutes)
+  const resetForm = () => {
+    setTitle('')
+    setDate(undefined)
+    setTime('09:00')
+    setLocation('')
+    setDetails('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +92,11 @@ export function ScheduleDialog({
 
     setLoading(true)
     try {
-      const scheduledDateTime = getScheduledDateTime(date, time)
+      const scheduledDateTime = setMinutes(
+        setHours(date, parseInt(time.split(':')[0])), 
+        parseInt(time.split(':')[1])
+      )
+      
       const inspection: Omit<Inspection, 'id' | 'images'> = {
         title,
         status: 'Pending' as const,
@@ -111,57 +114,44 @@ export function ScheduleDialog({
         details,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        synced: true,
+        synced: false,
       }
 
-      // Try to add to Microsoft Calendar first
+      // First save to our system
+      await onSchedule(inspection)
+
+      // Then try to sync with Microsoft Calendar if authenticated
       const accounts = msalInstance.getAllAccounts()
       if (accounts.length > 0) {
-        try {
-          await addToOutlookCalendar({
-            subject: title,
-            start: {
-              dateTime: scheduledDateTime.toISOString(),
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            },
-            end: {
-              dateTime: addHours(scheduledDateTime, 1).toISOString(),
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            },
-            location: {
-              displayName: location,
-            },
-            body: {
-              contentType: 'text',
-              content: details || 'No additional details provided.',
-            },
-          })
-        } catch (error) {
-          console.error('Failed to add to Microsoft Calendar:', error)
-          toast({
-            title: "Warning",
-            description: "Failed to sync with Microsoft Calendar. The inspection will still be scheduled.",
-            variant: "destructive",
-          })
-        }
+        const endDateTime = addHours(scheduledDateTime, 2) // Consistently use 2 hours duration
+        
+        await addToOutlookCalendar({
+          subject: title,
+          start: {
+            dateTime: scheduledDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          end: {
+            dateTime: endDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+          location: {
+            displayName: location,
+          },
+          body: {
+            contentType: 'text',
+            content: details || 'No additional details provided.',
+          },
+        })
       }
-
-      // Schedule the inspection in our system
-      await onSchedule(inspection)
 
       toast({
         title: "Success",
-        description: accounts.length > 0 
-          ? "Inspection scheduled and synced with Microsoft Calendar"
-          : "Inspection scheduled successfully",
+        description: "Inspection scheduled successfully",
       })
 
+      resetForm()
       onOpenChange(false)
-      setTitle('')
-      setDate(undefined)
-      setTime('09:00')
-      setLocation('')
-      setDetails('')
     } catch (error) {
       console.error('Error scheduling inspection:', error)
       toast({
@@ -172,39 +162,6 @@ export function ScheduleDialog({
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleSpeechRecognition = async () => {
-    if (isRecording) {
-      setIsRecording(false);
-    } else {
-      try {
-        setIsRecording(true);
-        toast({
-          title: "Recording Started",
-          description: "Speak clearly into your microphone.",
-        });
-        const recognizedText = await recognizeSpeech();
-        setDetails(prev => prev + (prev ? '\n' : '') + recognizedText);
-      } catch (error) {
-        console.error('Speech recognition error:', error);
-        toast({
-          title: "Speech Recognition Error",
-          description: "Speech-to-text is not available. Please check your Azure Speech Service configuration.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsRecording(false);
-      }
-    }
-  };
-
-  const resetForm = () => {
-    setTitle('')
-    setDate(undefined)
-    setTime('09:00')
-    setLocation('')
-    setDetails('')
   }
 
   return (
@@ -226,6 +183,7 @@ export function ScheduleDialog({
             </Button>
           </div>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
@@ -238,6 +196,7 @@ export function ScheduleDialog({
               required
             />
           </div>
+
           <div className="space-y-2">
             <Label>Date</Label>
             <Popover>
@@ -263,6 +222,7 @@ export function ScheduleDialog({
               </PopoverContent>
             </Popover>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="time">Time</Label>
             <div className="flex items-center">
@@ -281,6 +241,7 @@ export function ScheduleDialog({
               </Select>
             </div>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
             <Input
@@ -292,39 +253,18 @@ export function ScheduleDialog({
               required
             />
           </div>
+
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="details">Details</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={`gap-2 ${isRecording ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
-                onClick={toggleSpeechRecognition}
-              >
-                {isRecording ? (
-                  <>
-                    <MicOff className="h-4 w-4" />
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-4 w-4" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
-            </div>
+            <Label htmlFor="details">Details</Label>
             <Textarea
               id="details"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Enter inspection details or use voice input"
+              placeholder="Enter inspection details"
               className="min-h-[100px] rounded-xl"
             />
           </div>
-
-          {/* Microsoft Calendar Integration */}
+          
           {msalInstance.getAllAccounts().length === 0 && (
             <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
               <div className="text-sm">
@@ -347,7 +287,10 @@ export function ScheduleDialog({
               type="button"
               variant="outline"
               className="flex-1 rounded-xl"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                resetForm()
+                onOpenChange(false)
+              }}
             >
               Cancel
             </Button>
