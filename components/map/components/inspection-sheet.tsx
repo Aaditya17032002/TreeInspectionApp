@@ -8,6 +8,7 @@ import type { Inspection } from "../../../lib/types"
 import { getAddressFromCoordinates, syncPendingAddresses } from '../../../lib/services/geolocation'
 import { ImageViewer } from "../../../components/ui/image-viewer"
 import { Badge } from '../../../components/ui/badge'
+import { getUserInfo } from '../../../lib/msal-utils';
 
 interface InspectionSheetProps {
   inspection: Inspection | null
@@ -17,24 +18,12 @@ interface InspectionSheetProps {
 export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
   const [currentAddress, setCurrentAddress] = useState<string>('')
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
-  const [uniqueImages, setUniqueImages] = useState<string[]>([])
+  const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (inspection) {
       setCurrentAddress(inspection.location.address)
       updateAddress(inspection.location.latitude, inspection.location.longitude)
-      // Deduplicate images when inspection changes
-      if (inspection.images) {
-        const seen = new Set<string>()
-        const unique = inspection.images.filter(img => {
-          if (seen.has(img)) return false
-          seen.add(img)
-          return true
-        })
-        setUniqueImages(unique)
-      } else {
-        setUniqueImages([])
-      }
     }
   }, [inspection])
 
@@ -63,6 +52,11 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
       window.removeEventListener('online', syncPendingAddresses)
     }
   }, [])
+
+  useEffect(() => {
+    const info = getUserInfo();
+    setUserInfo(info);
+  }, []);
 
   const updateAddress = async (latitude: number, longitude: number) => {
     try {
@@ -142,7 +136,7 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
                     <InfoItem
                       icon={User}
                       label="Inspector"
-                      value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`}
+                      value={`${userInfo?.name || 'Unknown'} (ID: ${userInfo?.email || 'Unknown'})`}
                     />
 
                     <InfoItem
@@ -157,11 +151,11 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
                       value={inspection.details}
                     />
 
-                    {uniqueImages.length > 0 && (
+                    {inspection.images && inspection.images.length > 0 && (
                       <div className="p-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Images</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {uniqueImages.map((img, index) => (
+                          {inspection.images.map((img, index) => (
                             <div 
                               key={index}
                               className="relative cursor-pointer aspect-square"
@@ -183,16 +177,21 @@ export function InspectionSheet({ inspection, onClose }: InspectionSheetProps) {
             </div>
 
             <div className="p-4 border-t bg-white">
-              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                Update Status
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  Update Status
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Add Note
+                </Button>
+              </div>
             </div>
           </div>
         </SheetContent>
       </Sheet>
 
       <ImageViewer
-        images={uniqueImages}
+        images={inspection.images || []}
         initialIndex={selectedImageIndex || 0}
         open={selectedImageIndex !== null}
         onOpenChange={(open) => !open && setSelectedImageIndex(null)}
