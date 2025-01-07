@@ -6,11 +6,12 @@ import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Textarea } from "../../../components/ui/textarea"
 import { Label } from "../../../components/ui/label"
-import { Camera, Loader2, X } from 'lucide-react'
+import { Camera, Loader2, X, Mic, MicOff } from 'lucide-react'
 import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
+import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../../../lib/types/speech-recognition'
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -30,8 +31,99 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
   const [loading, setLoading] = useState(false)
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isRecognitionSupported, setIsRecognitionSupported] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Check for speech recognition support
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setIsRecognitionSupported(!!SpeechRecognition);
+    
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setDetails(prev => {
+            const cursorPosition = textareaRef.current?.selectionStart || prev.length;
+            const textBefore = prev.substring(0, cursorPosition);
+            const textAfter = prev.substring(cursorPosition);
+            return textBefore + finalTranscript + textAfter;
+          });
+        }
+      };
+
+      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+        addNotification({
+          type: 'error',
+          title: 'Speech Recognition Error',
+          message: 'Failed to recognize speech. Please try again or use text input.',
+        });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [addNotification]);
+
+  const toggleSpeechRecognition = async () => {
+    if (!isRecognitionSupported) {
+      addNotification({
+        type: 'error',
+        title: 'Not Supported',
+        message: 'Speech recognition is not supported in your browser.',
+      });
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        await recognitionRef.current?.start();
+        setIsRecording(true);
+        addNotification({
+          type: 'info',
+          title: 'Recording Started',
+          message: 'Speak clearly into your microphone.',
+        });
+      } catch (error) {
+        console.error('Speech recognition error:', error);
+        addNotification({
+          type: 'error',
+          title: 'Speech Recognition Error',
+          message: 'Failed to start speech recognition. Please try again.',
+        });
+      }
+    }
+  };
 
   const toggleCamera = async () => {
     if (isCameraActive) {
@@ -94,6 +186,9 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
   useEffect(() => {
     return () => {
       stopCamera()
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     }
   }, [])
 
@@ -199,6 +294,9 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
     } finally {
       setLoading(false)
       stopCamera()
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     }
   }
 
@@ -209,9 +307,11 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         onOpenChange={(newOpen) => {
           if (!newOpen) {
             stopCamera()
+            if (recognitionRef.current) {
+              recognitionRef.current.abort();
+            }
           }
           onOpenChange(newOpen)
-          
         }}
       >
         <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg md:w-full">
@@ -229,13 +329,47 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
               />
             </div>
             <div>
-              <Label htmlFor="details">Details</Label>
-              <Textarea
-                id="details"
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                placeholder="Enter inspection details"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="details">Details</Label>
+                {isRecognitionSupported && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={`gap-2 ${isRecording ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
+                    onClick={toggleSpeechRecognition}
+                  >
+                    {isRecording ? (
+                      <>
+                        <MicOff className="h-4 w-4" />
+                        Stop Recording
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4" />
+                        Start Recording
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              <div className="relative">
+                <Textarea
+                  ref={textareaRef}
+                  id="details"
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  placeholder="Enter inspection details or click the microphone to use voice input"
+                  className={isRecording ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                />
+                {isRecording && (
+                  <div className="absolute top-2 right-2">
+                    <div className="animate-pulse">
+                      <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label>Camera</Label>
