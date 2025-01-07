@@ -16,11 +16,13 @@ export async function rephraseWithPunctuation(text: string): Promise<string> {
         timeout: 10000, // 10 seconds timeout
       });
 
-      if (!response.data) {
-        throw new Error('No response data received');
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('Invalid response data received');
       }
 
-      return response.data;
+      // Extract the rephrased text from the response
+      const rephrasedText = response.data.rephrased_text || response.data.text || response.data.toString();
+      return rephrasedText;
     } catch (error) {
       console.error(`Error rephrasing text (attempt ${retries + 1}):`, error);
       
