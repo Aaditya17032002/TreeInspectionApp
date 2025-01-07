@@ -11,7 +11,7 @@ import { useNotificationStore } from '../../../lib/stores/notification-store'
 import { getCurrentLocation, getAddressFromCoordinates } from '../../../lib/services/geolocation'
 import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
-import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../../../lib/types/speech-recognition'
+import { recognizeSpeech } from '../../../lib/azure-speech-service'
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -32,95 +32,37 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [isRecording, setIsRecording] = useState(false)
-  const [isRecognitionSupported, setIsRecognitionSupported] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Check for speech recognition support
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    setIsRecognitionSupported(!!SpeechRecognition);
-    
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
-        }
-        
-        if (finalTranscript) {
-          setDetails(prev => {
-            const cursorPosition = textareaRef.current?.selectionStart || prev.length;
-            const textBefore = prev.substring(0, cursorPosition);
-            const textAfter = prev.substring(cursorPosition);
-            return textBefore + finalTranscript + textAfter;
-          });
-        }
-      };
-
-      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('Speech recognition error:', event.error);
-        setIsRecording(false);
-        addNotification({
-          type: 'error',
-          title: 'Speech Recognition Error',
-          message: 'Failed to recognize speech. Please try again or use text input.',
-        });
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-    };
-  }, [addNotification]);
-
   const toggleSpeechRecognition = async () => {
-    if (!isRecognitionSupported) {
-      addNotification({
-        type: 'error',
-        title: 'Not Supported',
-        message: 'Speech recognition is not supported in your browser.',
-      });
-      return;
-    }
-
     if (isRecording) {
-      recognitionRef.current?.stop();
       setIsRecording(false);
     } else {
       try {
-        await recognitionRef.current?.start();
         setIsRecording(true);
         addNotification({
           type: 'info',
           title: 'Recording Started',
           message: 'Speak clearly into your microphone.',
         });
+        const recognizedText = await recognizeSpeech();
+        setDetails(prev => {
+          const cursorPosition = textareaRef.current?.selectionStart || prev.length;
+          const textBefore = prev.substring(0, cursorPosition);
+          const textAfter = prev.substring(cursorPosition);
+          return textBefore + recognizedText + textAfter;
+        });
       } catch (error) {
         console.error('Speech recognition error:', error);
         addNotification({
           type: 'error',
           title: 'Speech Recognition Error',
-          message: 'Failed to start speech recognition. Please try again.',
+          message: 'Failed to recognize speech. Please try again.',
         });
+      } finally {
+        setIsRecording(false);
       }
     }
   };
@@ -186,9 +128,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
   useEffect(() => {
     return () => {
       stopCamera()
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
     }
   }, [])
 
@@ -294,9 +233,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
     } finally {
       setLoading(false)
       stopCamera()
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
     }
   }
 
@@ -307,9 +243,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         onOpenChange={(newOpen) => {
           if (!newOpen) {
             stopCamera()
-            if (recognitionRef.current) {
-              recognitionRef.current.abort();
-            }
           }
           onOpenChange(newOpen)
         }}
@@ -331,27 +264,25 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="details">Details</Label>
-                {isRecognitionSupported && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={`gap-2 ${isRecording ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
-                    onClick={toggleSpeechRecognition}
-                  >
-                    {isRecording ? (
-                      <>
-                        <MicOff className="h-4 w-4" />
-                        Stop Recording
-                      </>
-                    ) : (
-                      <>
-                        <Mic className="h-4 w-4" />
-                        Start Recording
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={`gap-2 ${isRecording ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
+                  onClick={toggleSpeechRecognition}
+                >
+                  {isRecording ? (
+                    <>
+                      <MicOff className="h-4 w-4" />
+                      Stop Recording
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4" />
+                      Start Recording
+                    </>
+                  )}
+                </Button>
               </div>
               <div className="relative">
                 <Textarea
