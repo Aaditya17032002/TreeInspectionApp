@@ -19,18 +19,15 @@ export async function rephraseWithPunctuation(text: string): Promise<string> {
       // Log the response for debugging
       console.log('Response received from Gemini API:', response.data);
 
-      // Ensure response contains valid rephrased text
-      if (!response.data || typeof response.data !== 'object') {
-        throw new Error('Invalid response data received');
-      }
+      // Since the backend now returns a string directly, use response.data as the rephrased text
+      const rephrasedText = response.data;
 
-      // Extract the rephrased text from the response (ensure it's a string)
-      const rephrasedText = response.data.rephrased_text || response.data.text;
+      // Ensure the response data is a string
       if (typeof rephrasedText !== 'string') {
         throw new Error('Rephrased text is not a string');
       }
 
-      return rephrasedText; // Return the rephrased text
+      return rephrasedText; // Return the rephrased text as a string
     } catch (error) {
       console.error(`Error rephrasing text (attempt ${retries + 1}):`, error);
 
