@@ -13,7 +13,7 @@ import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
 import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../../../lib/types/speech-recognition'
 import { debounce } from '../../../lib/utils/debounce'
-import { rephraseWithPunctuation } from '../../../server/gemini'
+import { rephraseWithPunctuation } from '../../../lib/api' // Updated import
 
 interface NewInspectionDialogProps {
   open: boolean;
@@ -123,7 +123,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         addNotification({
           type: 'error',
           title: 'Rephrasing Error',
-          message: 'Failed to rephrase the text. Please check your input.',
+          message: error instanceof Error ? error.message : 'Failed to rephrase the text. Please check your input.',
         });
       } finally {
         setIsProcessing(false);
