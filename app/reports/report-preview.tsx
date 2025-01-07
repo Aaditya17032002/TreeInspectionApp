@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { useToast } from "../../components/ui/use-toast"
+import axios from 'axios'
 
 interface ExtendedJsPDF extends jsPDF {
   lastAutoTable?: {
@@ -27,6 +28,11 @@ interface AIReportContent {
   observations: string;
   recommendations: string;
 }
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function ReportPreview({ inspection, open, onOpenChange, onDownload }: ReportPreviewProps) {
   const [pdfUrl, setPdfUrl] = useState<string>('')
@@ -59,42 +65,56 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
 
   const generateAIReport = async () => {
     setIsGenerating(true);
-    try {
-      const response = await fetch('https://gemini-fastapi-1.onrender.com/generate_report_content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    let retries = 0;
+
+    while (retries < MAX_RETRIES) {
+      try {
+        const response = await axios.post('https://gemini-fastapi-1.onrender.com/generate_report_content', {
           description: inspection.details
-        }),
-      });
+        }, {
+          timeout: 10000, // 10 seconds timeout
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to generate AI report: ${JSON.stringify(errorData)}`);
+        // Log the response for debugging
+        console.log('Response received from Gemini API:', response.data);
+
+        const data = response.data;
+        // Extract and format the required fields from the response
+        const aiContent: AIReportContent = {
+          summary: formatAIContent(data.summary || '').join('\n'),
+          observations: formatAIContent(data.observations || '').join('\n'),
+          recommendations: formatAIContent(data.recommendations || '').join('\n'),
+        };
+        setAiContent(aiContent);
+        return aiContent;
+      } catch (error) {
+        console.error(`Error generating AI report (attempt ${retries + 1}):`, error);
+
+        if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
+          if (retries === MAX_RETRIES - 1) {
+            toast({
+              title: "Network Error",
+              description: "Unable to connect to the AI service after multiple attempts. Please try again later.",
+              variant: "destructive",
+            });
+            throw new Error('Network error: Unable to connect to the AI service after multiple attempts.');
+          }
+          await wait(RETRY_DELAY * (retries + 1)); // Exponential backoff
+          retries++;
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to generate AI report. Please try again.",
+            variant: "destructive",
+          });
+          throw error;
+        }
+      } finally {
+        setIsGenerating(false);
       }
-
-      const data = await response.json();
-      // Extract and format the required fields from the response
-      const aiContent: AIReportContent = {
-        summary: formatAIContent(data.summary || '').join('\n'),
-        observations: formatAIContent(data.observations || '').join('\n'),
-        recommendations: formatAIContent(data.recommendations || '').join('\n'),
-      };
-      setAiContent(aiContent);
-      return aiContent;
-    } catch (error) {
-      console.error('Error generating AI report:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate AI report. Please try again.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsGenerating(false);
     }
+
+    throw new Error('Max retries reached. Unable to generate AI report.');
   };
 
   useEffect(() => {
