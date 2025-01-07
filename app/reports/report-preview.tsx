@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent } from "../../components/ui/dialog"
 import { Button } from "../../components/ui/button"
-import { X, Download, Loader2 } from 'lucide-react'
+import { X, Download } from 'lucide-react'
 import type { Inspection } from "../../lib/types"
 import { useEffect, useRef, useState } from "react"
 import jsPDF from 'jspdf'
@@ -21,17 +21,9 @@ interface ReportPreviewProps {
   onDownload: () => void
 }
 
-interface AIReportContent {
-  summary: string;
-  observations: string;
-  recommendations: string;
-}
-
 export function ReportPreview({ inspection, open, onOpenChange, onDownload }: ReportPreviewProps) {
   const [pdfUrl, setPdfUrl] = useState<string>('')
   const [isMobile, setIsMobile] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [aiContent, setAiContent] = useState<AIReportContent | null>(null)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -42,67 +34,11 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const formatAIContent = (content: string): string[] => {
-    const lines = content.split('\n')
-    return lines.map(line => {
-      if (line.startsWith('**') && line.endsWith('**')) {
-        return line.slice(2, -2) // Remove ** from start and end
-      }
-      if (line.match(/^\d+\./)) {
-        return `• ${line.split('. ')[1]}` // Convert numbered list to bullet points
-      }
-      return line
-    })
-  }
-
-  const generateAIReport = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch('https://gemini-fastapi-1.onrender.com/generate_report_content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inspection_details: {
-            title: inspection.title,
-            details: inspection.details,
-            status: inspection.status,
-            location: inspection.location,
-            scheduledDate: inspection.scheduledDate,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate AI report');
-      }
-
-      const data = await response.json();
-      // Extract and format the required fields from the response
-      const aiContent: AIReportContent = {
-        summary: formatAIContent(data.summary || '').join('\n'),
-        observations: formatAIContent(data.observations || '').join('\n'),
-        recommendations: formatAIContent(data.recommendations || '').join('\n'),
-      };
-      setAiContent(aiContent);
-      return aiContent;
-    } catch (error) {
-      console.error('Error generating AI report:', error);
-      return null;
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   useEffect(() => {
-    if (!open) return;
+    if (!open) return
 
-    const generatePDF = async () => {
-      // First, generate AI content
-      const aiReport = await generateAIReport();
-      
-      const doc = new jsPDF() as ExtendedJsPDF;
+    const generatePDF = () => {
+      const doc = new jsPDF() as ExtendedJsPDF
       
       // Title
       doc.setFont('helvetica', 'bold')
@@ -157,52 +93,6 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
       doc.setFont('helvetica', 'normal')
       const splitDetails = doc.splitTextToSize(inspection.details, 170)
       doc.text(splitDetails, 20, yPos + 20)
-
-      // AI Generated Content
-      if (aiReport) {
-        const aiStartY = yPos + splitDetails.length * 10 + 30;
-        
-        // AI Summary
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(16)
-        doc.text('AI Analysis', 20, aiStartY)
-        
-        const addFormattedSection = (title: string, content: string, startY: number) => {
-          doc.setFont('helvetica', 'bold')
-          doc.setFontSize(14)
-          doc.text(title, 20, startY)
-          doc.setFont('helvetica', 'normal')
-          doc.setFontSize(12)
-          
-          let currentY = startY + 10
-          const lines = content.split('\n')
-          lines.forEach(line => {
-            if (line.startsWith('•')) {
-              doc.text('•', 25, currentY)
-              const bulletText = doc.splitTextToSize(line.slice(2), 160)
-              doc.text(bulletText, 30, currentY)
-              currentY += bulletText.length * 7
-            } else if (line.trim().startsWith('**') && line.trim().endsWith('**')) {
-              doc.setFont('helvetica', 'bold')
-              const boldText = doc.splitTextToSize(line.slice(2, -2), 170)
-              doc.text(boldText, 20, currentY)
-              doc.setFont('helvetica', 'normal')
-              currentY += boldText.length * 7
-            } else {
-              const normalText = doc.splitTextToSize(line, 170)
-              doc.text(normalText, 20, currentY)
-              currentY += normalText.length * 7
-            }
-            currentY += 3 // Add some space between lines
-          })
-          return currentY
-        }
-
-        let currentY = aiStartY + 20
-        currentY = addFormattedSection('Summary', aiReport.summary, currentY)
-        currentY = addFormattedSection('Observations', aiReport.observations, currentY + 10)
-        addFormattedSection('Recommendations', aiReport.recommendations, currentY + 10)
-      }
 
       // Images Section
       if (inspection.images && inspection.images.length > 0) {
@@ -270,14 +160,9 @@ export function ReportPreview({ inspection, open, onOpenChange, onDownload }: Re
               onClick={onDownload}
               className="bg-purple-600 hover:bg-purple-700 text-white"
               size={isMobile ? "sm" : "default"}
-              disabled={isGenerating}
             >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
-              )}
-              {!isMobile && (isGenerating ? "Generating..." : "Download AI Report")}
+              <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
+              {!isMobile && "Download PDF"}
             </Button>
             <Button
               variant="ghost"
