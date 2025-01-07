@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '../../../components/ui/button'
-import { ChevronLeft, MapPin, Calendar, User, Building2, FileText, TreeDeciduous } from 'lucide-react'
+import { ChevronLeft, MapPin, Calendar, User, Building2, FileText } from 'lucide-react'
 import { Badge } from '../../../components/ui/badge'
-import { getInspection, updateInspectionStatus } from '../../../lib/db'
+import { getInspection, updateInspectionStatus, initDB } from '../../../lib/db'
 import { Inspection } from '../../../lib/types'
+import { cn } from '../../../lib/utils'
 import { ImageViewer } from '../../../components/ui/image-viewer'
-import { getAddressFromCoordinates } from '../../../lib/services/geolocation'
-import { useToast } from '../../../components/ui/use-toast'
 import {
   Select,
   SelectContent,
@@ -17,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select"
-import { getUserInfo } from '../../../lib/msal-utils';
+import { useToast } from "../../../components/ui/use-toast"
+import { getAddressFromCoordinates } from '../../../lib/services/geolocation'
 
 export default function InspectionDetailsPage() {
   const params = useParams()
@@ -26,20 +26,32 @@ export default function InspectionDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [currentAddress, setCurrentAddress] = useState<string>('')
+  const [uniqueImages, setUniqueImages] = useState<string[]>([])
   const { toast } = useToast()
-  const [userInfo, setUserInfo] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     const loadInspection = async () => {
       try {
+        await initDB()
         const data = await getInspection(params.id as string)
-        setInspection(data)
+        setInspection(data || null)
         if (data) {
           const address = await getAddressFromCoordinates(
             data.location.latitude,
             data.location.longitude
           )
           setCurrentAddress(address)
+          
+          // Deduplicate images when inspection loads
+          if (data.images) {
+            const seen = new Set<string>()
+            const unique = data.images.filter(img => {
+              if (seen.has(img)) return false
+              seen.add(img)
+              return true
+            })
+            setUniqueImages(unique)
+          }
         }
       } catch (error) {
         console.error('Error loading inspection:', error)
@@ -55,16 +67,11 @@ export default function InspectionDetailsPage() {
     loadInspection()
   }, [params.id, toast])
 
-  useEffect(() => {
-    const info = getUserInfo();
-    setUserInfo(info);
-  }, []);
-
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: Inspection['status']) => {
     if (!inspection) return
 
     try {
-      const updatedInspection = await updateInspectionStatus(inspection.id, newStatus as Inspection['status'])
+      const updatedInspection = await updateInspectionStatus(inspection.id, newStatus)
       setInspection(updatedInspection)
       toast({
         title: "Status Updated",
@@ -82,12 +89,25 @@ export default function InspectionDetailsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white">
-        <div className="animate-pulse">
-          <div className="h-48 bg-purple-100" />
-          <div className="p-4 space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-3/4" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
+      <main className="min-h-screen bg-gray-50">
+        <header className="sticky top-0 z-10 bg-white px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-2"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        </header>
+        <div className="p-4 animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-2" />
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-20 bg-gray-200 rounded" />
+            ))}
           </div>
         </div>
       </main>
@@ -96,7 +116,18 @@ export default function InspectionDetailsPage() {
 
   if (!inspection) {
     return (
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-gray-50">
+        <header className="sticky top-0 z-10 bg-white px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-2"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        </header>
         <div className="p-4 text-center">
           <p className="text-gray-500">Inspection not found</p>
         </div>
@@ -106,132 +137,112 @@ export default function InspectionDetailsPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-white">
-        <div className="bg-gradient-to-b from-purple-500 to-purple-100">
-          <div className="relative max-w-5xl mx-auto">
-            <div className="absolute inset-0 overflow-hidden">
-              <TreeDeciduous className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300/20 h-48 w-48" />
-            </div>
-            
-            <header className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="m-4 text-white hover:bg-white/20"
-                onClick={() => router.back()}
-              >
-                <ChevronLeft className="h-5 w-5 mr-1" />
-                Back
-              </Button>
-            </header>
+      <main className="min-h-screen bg-gray-50 pb-16 md:pb-0">
+        <header className="sticky top-0 z-10 bg-white px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-2"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        </header>
 
-            <div className="relative px-4 pt-2 pb-8">
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-2xl font-semibold text-white flex items-center gap-2">
-                    Complaint #{inspection.id}
-                  </h1>
-                  <Badge variant="outline" className="bg-white/90 text-purple-600 border-none">
-                    {inspection.status}
-                  </Badge>
-                </div>
-                <h2 className="text-white/90 font-medium">
-                  {inspection.title}
-                </h2>
-              </div>
+        <div className="px-4 pb-4">
+          <div className="mb-6">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold">Inspection #{inspection.id}</h1>
+              <Badge variant="secondary">{inspection.status}</Badge>
             </div>
+            <p className="mt-1 text-gray-600">{inspection.title}</p>
           </div>
-        </div>
 
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white -mt-4 rounded-t-3xl">
-            <div className="divide-y divide-gray-100">
-              <InfoItem
-                icon={MapPin}
-                label="Location"
-                value={
-                  <>
-                    {currentAddress}
-                    <div className="text-sm text-gray-500 mt-1">
-                      Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
-                    </div>
-                  </>
-                }
-              />
-
-              <InfoItem
-                icon={Calendar}
-                label="Scheduled Date"
-                value={new Date(inspection.scheduledDate).toLocaleString()}
-              />
-
-              <InfoItem
-                icon={User}
-                label="Inspector"
-                value={`${userInfo?.name || 'Unknown'} (ID: ${userInfo?.email || 'Unknown'})`}
-              />
-
-              <InfoItem
-                icon={Building2}
-                label="Community Board"
-                value={inspection.communityBoard}
-              />
-
-              <InfoItem
-                icon={FileText}
-                label="Details"
-                value={inspection.details}
-              />
-
-              {inspection.images && inspection.images.length > 0 && (
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Images</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {inspection.images.map((img, index) => (
-                      <div 
-                        key={index}
-                        className="relative cursor-pointer aspect-square"
-                        onClick={() => setSelectedImageIndex(index)}
-                      >
-                        <img
-                          src={`data:image/jpeg;base64,${img}`}
-                          alt={`Inspection image ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
-                        />
-                      </div>
-                    ))}
+          <div className="space-y-6 rounded-lg bg-white p-4">
+            <InfoItem
+              icon={MapPin}
+              label="Location"
+              value={
+                <>
+                  {currentAddress}
+                  <div className="text-sm text-gray-500 mt-1">
+                    Lat: {inspection.location.latitude.toFixed(6)}, Long: {inspection.location.longitude.toFixed(6)}
                   </div>
-                </div>
-              )}
-            </div>
+                </>
+              }
+            />
 
-            <div className="p-4 border-t">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-medium text-gray-900">Update Status:</span>
-                <Select
-                  value={inspection.status}
-                  onValueChange={handleStatusChange}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="In-Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+            <InfoItem
+              icon={Calendar}
+              label="Scheduled Date"
+              value={new Date(inspection.scheduledDate).toLocaleString()}
+            />
+
+            <InfoItem
+              icon={User}
+              label="Inspector"
+              value={`${inspection.inspector.name} (ID: ${inspection.inspector.id})`}
+            />
+
+            <InfoItem
+              icon={Building2}
+              label="Community Board"
+              value={inspection.communityBoard}
+            />
+
+            <InfoItem
+              icon={FileText}
+              label="Details"
+              value={inspection.details}
+              className="whitespace-pre-line"
+            />
+
+            {uniqueImages.length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-medium text-gray-900 mb-2">Images</h3>
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+                  {uniqueImages.map((img, index) => (
+                    <div 
+                      key={index}
+                      className="relative cursor-pointer"
+                      onClick={() => setSelectedImageIndex(index)}
+                    >
+                      <img
+                        src={`data:image/jpeg;base64,${img}`}
+                        alt={`Inspection image ${index + 1}`}
+                        className="w-full h-40 object-cover rounded-lg hover:opacity-90 transition-opacity"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                Add Note
-              </Button>
+            )}
+          </div>
+
+          <div className="mt-6">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Update Status:</span>
+              <Select
+                value={inspection.status}
+                onValueChange={handleStatusChange}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="In-Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
       </main>
 
       <ImageViewer
-        images={inspection.images || []}
+        images={uniqueImages}
         initialIndex={selectedImageIndex || 0}
         open={selectedImageIndex !== null}
         onOpenChange={(open) => !open && setSelectedImageIndex(null)}
@@ -243,24 +254,20 @@ export default function InspectionDetailsPage() {
 function InfoItem({ 
   icon: Icon, 
   label, 
-  value 
+  value, 
+  className 
 }: { 
   icon: any
   label: string
   value: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="p-4 flex gap-4 items-start">
-      <div className="rounded-full bg-purple-100 p-3 flex-shrink-0">
-        <Icon className="h-6 w-6 text-purple-600" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-base font-semibold text-gray-900 mb-1">
-          {label}
-        </h3>
-        <div className="text-gray-600 break-words">
-          {value}
-        </div>
+    <div className="flex gap-3">
+      <Icon className="h-5 w-5 shrink-0 text-purple-600" />
+      <div>
+        <div className="font-medium text-gray-900">{label}</div>
+        <div className={cn("mt-1 text-gray-600", className)}>{value}</div>
       </div>
     </div>
   )
