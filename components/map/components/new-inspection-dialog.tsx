@@ -259,6 +259,7 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         inspector: {
           name: 'Meet Desai',
           id: 'MD001',
+          email: 'meet.desai@example.com'
         },
         communityBoard: '211',
         details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
