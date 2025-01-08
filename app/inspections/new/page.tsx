@@ -96,6 +96,7 @@ export default function NewInspectionPage() {
         inspector: {
           name: 'Meet Desai',
           id: 'MD001',
+          email: 'meet.desai@example.com',
         },
         communityBoard: '211',
         details: `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
