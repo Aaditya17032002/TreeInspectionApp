@@ -109,6 +109,7 @@ export function ScheduleDialog({
         inspector: {
           name: 'Current User',
           id: 'current-user-id',
+          email: ''
         },
         communityBoard: '211',
         details,
