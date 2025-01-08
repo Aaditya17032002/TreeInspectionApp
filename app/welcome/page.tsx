@@ -1,9 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Button } from "../components/ui/button"
+import { Button } from "../../components/ui/button"
 import { motion } from "framer-motion"
-import { TreeDeciduous } from 'lucide-react'
 
 export default function WelcomePage() {
   const router = useRouter()
@@ -43,12 +42,7 @@ export default function WelcomePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.5 }}
       >
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-            <TreeDeciduous className="h-10 w-10 text-purple-600 dark:text-purple-300" />
-          </div>
-        </div>
-        <h1 className="text-4xl font-bold mb-4">Tree Inspection</h1>
+        <h1 className="text-4xl font-bold mb-4">Tree</h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-md">
           Streamline Tree Inspections for Efficient Urban Forest Management
         </p>
@@ -56,7 +50,7 @@ export default function WelcomePage() {
           className="w-full max-w-xs bg-purple-600 hover:bg-purple-700 text-white"
           onClick={() => router.push('/role-selection')}
         >
-          Get Started →
+          Next →
         </Button>
       </motion.div>
     </div>

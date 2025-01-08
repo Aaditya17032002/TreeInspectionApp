@@ -21,9 +21,9 @@ export default function LoginPage() {
         const result = await instance.handleRedirectPromise()
         if (result) {
           console.log("Redirect handled successfully")
-          router.push("/")
+          router.push("/inspector/dashboard")
         } else if (accounts.length > 0) {
-          router.push("/")
+          router.push("/inspector/dashboard")
         }
       } catch (error) {
         console.error('Redirect handling error:', error)
@@ -68,7 +68,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Tree Inspection App
+            Tree Inspector Login
           </CardTitle>
           <CardDescription className="text-center">
             Sign in with your Microsoft account

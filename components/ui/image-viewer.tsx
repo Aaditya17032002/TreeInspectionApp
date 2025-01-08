@@ -7,14 +7,14 @@ import { useState, useEffect, useMemo } from 'react'
 
 interface ImageViewerProps {
   images: string[]
-  initialIndex: number
+  initialIndex?: number
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 export function ImageViewer({
   images,
-  initialIndex,
+  initialIndex = 0,
   open,
   onOpenChange,
 }: ImageViewerProps) {

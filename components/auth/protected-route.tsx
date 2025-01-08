@@ -30,6 +30,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if it's an admin route
+        const isAdminRoute = pathname.startsWith('/admin')
+        const isAdminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true'
+
+        // If it's an admin route and admin is logged in, bypass Microsoft auth
+        if (isAdminRoute && isAdminLoggedIn) {
+          setIsLoading(false)
+          return
+        }
+
+        // For non-admin routes or if admin is not logged in, proceed with Microsoft auth
         await instance.handleRedirectPromise()
         const isAuthenticated = accounts.length > 0
 
@@ -55,7 +66,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  const showNavbar = accounts.length > 0 && pathname !== '/login'
+  // Show navbar if user is authenticated (either through Microsoft or admin login)
+  const showNavbar = (accounts.length > 0 || localStorage.getItem('adminLoggedIn') === 'true') && 
+                    pathname !== '/login' && 
+                    pathname !== '/admin/login'
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -77,4 +91,3 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     </div>
   )
 }
-

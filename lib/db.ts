@@ -1,5 +1,6 @@
 import { openDB, DBSchema } from 'idb'
 import { Inspection } from './types'
+import {AdminComment, Notification} from '../lib/types/index'
 
 interface TreeInspectionDB extends DBSchema {
   inspections: {
@@ -119,3 +120,95 @@ export async function updateInspectionStatus(id: string, status: Inspection['sta
   return updatedInspection
 }
 
+
+export async function addAdminComment(
+  inspectionId: string,
+  comment: string,
+  adminUser: { id: string; name: string }
+): Promise<Inspection> {
+  const db = await initDB()
+  const inspection = await db.get('inspections', inspectionId)
+
+  if (!inspection) {
+    throw new Error('Inspection not found')
+  }
+
+  const adminComment: AdminComment = {
+    id: crypto.randomUUID(),
+    text: comment,
+    createdAt: new Date().toISOString(),
+    adminId: adminUser.id,
+    adminName: adminUser.name,
+    read: false,
+  }
+
+  const updatedInspection = {
+    ...inspection,
+    adminComments: [...(inspection.adminComments || []), adminComment],
+    updatedAt: new Date().toISOString(),
+  }
+
+  await db.put('inspections', updatedInspection)
+
+  // Create notification
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    type: 'comment',
+    inspectionId: inspection.id,
+    message: `New comment from ${adminUser.name} on inspection #${inspection.id}`,
+    createdAt: new Date().toISOString(),
+    read: false,
+    recipientEmail: inspection.inspector.email,
+  }
+
+  await db.put('notifications', notification)
+
+  // Send email notification (implement this based on your email service)
+  await sendEmailNotification(
+    inspection.inspector.email,
+    'New Comment on Inspection',
+    `Admin ${adminUser.name} has added a comment to inspection #${inspection.id}: ${comment}`
+  )
+
+  return updatedInspection
+}
+
+export async function updateInspectionPriority(
+  inspectionId: string,
+  priority: Inspection['priority'],
+  adminUser: { id: string; name: string }
+): Promise<Inspection> {
+  const db = await initDB()
+  const inspection = await db.get('inspections', inspectionId)
+
+  if (!inspection) {
+    throw new Error('Inspection not found')
+  }
+
+  const updatedInspection = {
+    ...inspection,
+    priority,
+    updatedAt: new Date().toISOString(),
+  }
+
+  await db.put('inspections', updatedInspection)
+
+  // Create notification
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    type: 'priority_change',
+    inspectionId: inspection.id,
+    message: `Inspection #${inspection.id} priority changed to ${priority} by ${adminUser.name}`,
+    createdAt: new Date().toISOString(),
+    read: false,
+    recipientEmail: inspection.inspector.email,
+  }
+
+  await db.put('notifications', notification)
+
+  return updatedInspection
+}
+
+function sendEmailNotification(email: any, arg1: string, arg2: string) {
+  throw new Error('Function not implemented.')
+}

@@ -44,4 +44,5 @@ export async function rephraseWithPunctuation(text: string): Promise<string> {
   }
 
   throw new Error('Max retries reached. Unable to rephrase text.');
+  
 }

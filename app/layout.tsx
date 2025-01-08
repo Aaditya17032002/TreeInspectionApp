@@ -1,11 +1,8 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { Toaster } from '../components/ui/toast'
-import { ProtectedRoute } from '../components/auth/protected-route'
-import { InstallPrompt } from '../components/pwa/install-prompt'
+import { RouteProtection } from '../components/auth/route-protection'
 import { Providers } from './providers'
-import { ServiceWorkerRegister } from './service-worker-register'
-import { NotificationToast } from '../components/notifications/notification-toast'
 import { metadata } from './metadata'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -26,12 +23,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
-          <ProtectedRoute>
+          <RouteProtection>
             {children}
-            <NotificationToast />
-            <InstallPrompt />
-            <ServiceWorkerRegister />
-          </ProtectedRoute>
+          </RouteProtection>
           <Toaster />
         </Providers>
       </body>
