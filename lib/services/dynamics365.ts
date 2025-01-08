@@ -143,6 +143,7 @@ class Dynamics365Service {
       inspector: {
         id: item.new_inspectorid,
         name: item.new_inspectorname,
+        email: `${item.new_inspectorname.toLowerCase().replace(/\s+/g, '.')}@example.com`, // Add default email based on name
       },
       communityBoard: item.new_communityboard,
       details: item.new_description,
