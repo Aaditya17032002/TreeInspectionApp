@@ -1,132 +1,162 @@
-import { initDB } from '../db'
+import { openDB } from 'idb'
+import { checkInternetConnection } from '../utils/network'
 import { blobStorageService } from './blob-storage'
-import { dynamics365Service } from './dynamics365'
-import { Inspection } from '../types'
+import { Inspection, Dynamics365InspectionSchema, DynamicsStatusMapping } from '../types'
+import { getAccessToken } from '../auth/token'
+
+const SYNC_INTERVAL = 1000 * 60 * 5 // 5 minutes
+const DYNAMICS_API_URL = process.env.NEXT_PUBLIC_DYNAMICS_API_URL
+const DYNAMICS_INSPECTION_ENTITY_NAME = process.env.DYNAMICS_INSPECTION_ENTITY_NAME
+const DYNAMICS_IMAGE_ENTITY_NAME = process.env.DYNAMICS_IMAGE_ENTITY_NAME
+
+interface SyncQueue {
+  id: string
+  type: 'inspection' | 'image'
+  data: any
+  retryCount: number
+}
 
 class SyncService {
   private syncInProgress = false
-  private networkStatus: boolean = navigator.onLine
+  private db: any = null
 
   constructor() {
-    // Listen for online/offline events
-    window.addEventListener('online', this.handleNetworkChange.bind(this))
-    window.addEventListener('offline', this.handleNetworkChange.bind(this))
+    this.initDB()
+    this.startSyncInterval()
   }
 
-  private handleNetworkChange(event: Event) {
-    this.networkStatus = event.type === 'online'
-    if (this.networkStatus) {
-      this.syncPendingData()
+  private async initDB() {
+    this.db = await openDB('sync-queue-db', 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('syncQueue')) {
+          db.createObjectStore('syncQueue', { keyPath: 'id' })
+        }
+      },
+    })
+  }
+
+  private startSyncInterval() {
+    setInterval(() => {
+      this.attemptSync()
+    }, SYNC_INTERVAL)
+  }
+
+  async queueForSync(data: Inspection) {
+    await this.db.add('syncQueue', {
+      id: data.id,
+      type: 'inspection',
+      data,
+      retryCount: 0,
+    })
+    this.attemptSync()
+  }
+
+  private async attemptSync() {
+    if (this.syncInProgress) return
+    
+    const isOnline = await checkInternetConnection()
+    if (!isOnline) {
+      console.log('No internet connection. Sync postponed.')
+      return
     }
-  }
 
-  async syncPendingData(): Promise<void> {
-    if (this.syncInProgress || !this.networkStatus) return
+    this.syncInProgress = true
 
     try {
-      this.syncInProgress = true
-      const db = await initDB()
-      const pendingInspections = await db.getAll('offlineInspections')
-
-      for (const inspection of pendingInspections) {
+      const queue = await this.db.getAll('syncQueue')
+      
+      for (const item of queue) {
         try {
-          // First, upload images to blob storage
-          const imageUrls = await this.uploadImages(inspection.images)
-          
-          // Update inspection with image URLs
-          const inspectionWithUrls: Inspection = {
-            ...inspection,
-            images: imageUrls
+          if (item.type === 'inspection') {
+            await this.syncInspection(item.data)
           }
-
-          // Sync to Dynamics 365
-          const dynamicsId = await dynamics365Service.createInspection(inspectionWithUrls)
-          
-          // Update local DB with synced status and dynamics ID
-          const syncedInspection: Inspection = {
-            ...inspectionWithUrls,
-            synced: true,
-            dynamicsId
-          }
-          await db.put('inspections', syncedInspection)
-
-          // Remove from offline store
-          await db.delete('offlineInspections', inspection.id)
-
+          await this.db.delete('syncQueue', item.id)
         } catch (error) {
-          console.error(`Failed to sync inspection ${inspection.id}:`, error)
-          // Update sync attempts and last error
-          await db.put('offlineInspections', {
-            ...inspection,
-            syncAttempts: (inspection.syncAttempts || 0) + 1,
-            lastSyncError: error instanceof Error ? error.message : 'Unknown error'
-          })
+          console.error(`Failed to sync item ${item.id}:`, error)
+          
+          // Update retry count
+          item.retryCount++
+          if (item.retryCount < 3) {
+            await this.db.put('syncQueue', item)
+          } else {
+            await this.db.delete('syncQueue', item.id)
+            console.error(`Sync failed after 3 attempts for item ${item.id}`)
+          }
         }
       }
-    } catch (error) {
-      console.error('Sync error:', error)
     } finally {
       this.syncInProgress = false
     }
   }
 
-  private async uploadImages(images: File[]): Promise<string[]> {
-    const uploadPromises = images.map(async (image) => {
-      const fileName = `inspection-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
-      return blobStorageService.uploadImage(image, fileName)
+  private async syncInspection(inspection: Inspection): Promise<void> {
+    // First, upload all images to blob storage
+    const imageUrls = await Promise.all(
+      inspection.images.map(async (base64Image: string, index: number) => {
+        const fileName = `${inspection.id}_${index}.jpg`
+        return await blobStorageService.uploadBase64Image(base64Image, fileName)
+      })
+    )
+
+    // Then sync with Dynamics 365
+    const dynamicsInspection: Dynamics365InspectionSchema = {
+      new_treeinspectionid: inspection.id,
+      new_name: inspection.title,
+      new_offlineid: inspection.id,
+      new_latitude: inspection.location.latitude,
+      new_longitude: inspection.location.longitude,
+      new_address: inspection.location.address,
+      new_postalcode: '', // Assuming this is not in our current schema
+      new_status: DynamicsStatusMapping[inspection.status],
+      new_createdon: inspection.createdAt,
+      new_modifiedon: inspection.updatedAt,
+      new_inspectorid: inspection.inspector.id,
+      new_inspectorname: inspection.inspector.name,
+      new_description: inspection.details,
+      new_communityboard: inspection.communityBoard,
+      new_syncstatus: true,
+      new_lastsyncedon: new Date().toISOString(),
+      new_syncattempts: 1
+    }
+
+    // Create main inspection record
+    const response = await fetch(`${DYNAMICS_API_URL}/${DYNAMICS_INSPECTION_ENTITY_NAME}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getAccessToken()}`
+      },
+      body: JSON.stringify(dynamicsInspection)
     })
 
-    return Promise.all(uploadPromises)
-  }
-
-  async saveInspection(inspection: Inspection, images: File[]): Promise<Inspection> {
-    const db = await initDB()
-
-    try {
-      if (this.networkStatus) {
-        // Online flow: Upload images first
-        const imageUrls = await this.uploadImages(images)
-        const inspectionWithUrls: Inspection = {
-          ...inspection,
-          images: imageUrls
-        }
-
-        // Sync to Dynamics
-        const dynamicsId = await dynamics365Service.createInspection(inspectionWithUrls)
-        
-        // Save to local DB with synced status
-        const syncedInspection: Inspection = {
-          ...inspectionWithUrls,
-          synced: true,
-          dynamicsId
-        }
-        await db.put('inspections', syncedInspection)
-        return syncedInspection
-      } else {
-        // Offline flow: Save to offline store
-        const offlineInspection = {
-          ...inspection,
-          images, // Store original files
-          synced: false,
-          syncAttempts: 0,
-          createdAt: new Date().toISOString()
-        }
-        await db.put('offlineInspections', offlineInspection)
-        return inspection
-      }
-    } catch (error) {
-      console.error('Error saving inspection:', error)
-      // Always save to offline store if there's an error
-      const offlineInspection = {
-        ...inspection,
-        images,
-        synced: false,
-        syncAttempts: 0,
-        createdAt: new Date().toISOString()
-      }
-      await db.put('offlineInspections', offlineInspection)
-      return inspection
+    if (!response.ok) {
+      throw new Error('Failed to sync inspection to Dynamics 365')
     }
+
+    const createdInspection = await response.json()
+
+    // Create image records
+    await Promise.all(
+      imageUrls.map(async (imageUrl) => {
+        const imageData = {
+          new_complaintid: createdInspection.new_treeinspectionid,
+          new_imageurl: imageUrl
+        }
+
+        const imageResponse = await fetch(`${DYNAMICS_API_URL}/${DYNAMICS_IMAGE_ENTITY_NAME}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          },
+          body: JSON.stringify(imageData)
+        })
+
+        if (!imageResponse.ok) {
+          throw new Error('Failed to sync image to Dynamics 365')
+        }
+      })
+    )
   }
 }
 

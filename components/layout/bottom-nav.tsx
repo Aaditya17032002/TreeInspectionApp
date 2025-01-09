@@ -11,7 +11,7 @@ import { MoreSheet } from './more-sheet'
 import { Button } from '../ui/button'
 
 const navigation = [
-  { name: 'Home', href: '/', icon: Home },
+  { name: 'Home', href: '/inspector/dashboard', icon: Home },
   { name: 'Map', href: '/map', icon: Map },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Reports', href: '/reports', icon: FileText },

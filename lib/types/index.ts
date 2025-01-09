@@ -57,6 +57,73 @@ export interface Inspection {
     avatar?: string;
   }
   
-  // Add any other interfaces that are specific to the admin functionality
+  export interface GeolocationResponse {
+    latitude: number;
+    longitude: number;
+  }
+  
+  export interface AddressUpdate {
+    latitude: number;
+    longitude: number;
+    timestamp: number;
+    address?: string;
+    status: 'pending' | 'synced' | 'failed';
+  }
+  
+  export interface LocationCache {
+    address: string;
+    timestamp: number;
+    expiresAt: number;
+  }
+  
+  export interface SyncStatus {
+    lastSync: number;
+    pending: number;
+    failed: number;
+  }
+  
+  export interface OfflineInspection extends Omit<Inspection, 'images'> {
+    images: File[];
+    syncAttempts: number;
+    lastSyncError?: string;
+  }
+  
+  export interface RephraseResponse {
+    rephrasedText: string;
+    error?: string;
+    details?: string;
+  }
+  
+  export interface Dynamics365InspectionSchema {
+    new_treeinspectionid: string;
+    new_name: string;
+    new_offlineid: string;
+    new_latitude: number;
+    new_longitude: number;
+    new_address: string;
+    new_postalcode: string;
+    new_status: number;
+    new_createdon: string;
+    new_modifiedon: string;
+    new_inspectorid: string;
+    new_inspectorname: string;
+    new_description: string;
+    new_communityboard: string;
+    new_syncstatus: boolean;
+    new_lastsyncedon: string;
+    new_syncattempts: number;
+  }
+  
+  export const DynamicsStatusMapping = {
+    Pending: 1,
+    'In-Progress': 2,
+    Completed: 3,
+  } as const;
+  
+  export const DynamicsStatusReverseMapping = {
+    1: 'Pending',
+    2: 'In-Progress',
+    3: 'Completed',
+  } as const;
   
   

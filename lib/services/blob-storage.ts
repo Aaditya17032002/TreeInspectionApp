@@ -1,61 +1,62 @@
-import { BlobServiceClient, ContainerClient } from "@azure/storage-blob"
-
-const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING || ""
-const CONTAINER_NAME = "tree-inspection-images"
-
 class BlobStorageService {
-  private containerClient: ContainerClient | null = null
-
-  constructor() {
-    if (AZURE_STORAGE_CONNECTION_STRING) {
-      try {
-        const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING)
-        this.containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME)
-      } catch (error) {
-        console.error("Failed to initialize BlobStorageService:", error)
-      }
-    } else {
-      console.warn("Azure Storage connection string is not set.")
-    }
-  }
-
-  async uploadImage(file: File, fileName: string): Promise<string> {
-    if (!this.containerClient) {
-      throw new Error("BlobStorageService is not properly initialized")
-    }
-
+  async uploadBase64Image(base64Data: string, fileName: string): Promise<string> {
     try {
-      await this.containerClient.createIfNotExists()
-      const blockBlobClient = this.containerClient.getBlockBlobClient(fileName)
-      
-      // Convert File to ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer()
-      
-      await blockBlobClient.uploadData(arrayBuffer, {
-        blobHTTPHeaders: { 
-          blobContentType: file.type,
-          blobCacheControl: 'public, max-age=31536000' // 1 year cache
-        }
+      // Validate inputs
+      if (!base64Data || !fileName) {
+        throw new Error('base64Data and fileName are required')
+      }
+
+      const response = await fetch('/api/blob-storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          base64Data,
+          fileName,
+        }),
       })
-      
-      return blockBlobClient.url
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to upload image')
+      }
+
+      const data = await response.json()
+      return data.url
     } catch (error) {
-      console.error('Error uploading to blob storage:', error)
-      throw new Error('Failed to upload image to blob storage')
+      console.error('Error uploading base64 image:', error)
+      throw error instanceof Error 
+        ? error 
+        : new Error('Failed to upload base64 image to blob storage')
     }
   }
 
   async deleteImage(fileName: string): Promise<void> {
-    if (!this.containerClient) {
-      throw new Error("BlobStorageService is not properly initialized")
-    }
-
     try {
-      const blockBlobClient = this.containerClient.getBlockBlobClient(fileName)
-      await blockBlobClient.delete()
+      if (!fileName) {
+        throw new Error('fileName is required')
+      }
+
+      const response = await fetch('/api/blob-storage', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete image')
+      }
     } catch (error) {
-      console.error('Error deleting from blob storage:', error)
-      throw new Error('Failed to delete image from blob storage')
+      console.error('Error deleting image:', error)
+      throw error instanceof Error 
+        ? error 
+        : new Error('Failed to delete image from blob storage')
     }
   }
 }
