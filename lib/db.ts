@@ -212,4 +212,3 @@ export async function updateInspectionPriority(
 function sendEmailNotification(email: any, arg1: string, arg2: string) {
   throw new Error('Function not implemented.')
 }
-  

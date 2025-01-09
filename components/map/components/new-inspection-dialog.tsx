@@ -13,21 +13,19 @@ import { Inspection } from '../../../lib/types'
 import { ImageViewer } from '../../../components/ui/image-viewer'
 import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from '../../../lib/types/speech-recognition'
 import { debounce } from '../../../lib/utils/debounce'
-import { rephraseWithPunctuation } from '../../../lib/api'
-import { blobStorageService } from '../../../lib/services/blob-storage'
+import { rephraseWithPunctuation } from '../../../lib/api' // Updated import
 
 interface NewInspectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (inspection: Omit<Inspection, "id">, images: File[]) => Promise<Inspection>;
-  onUpdateImages: (inspectionId: string, imageUrls: string[]) => Promise<void>;
+  onSave: (inspection: Omit<Inspection, "id">, images: File[]) => Promise<void>;
 }
 
 export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectionDialogProps) {
   const isPWA = () => {
     return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
   };
-
+  
   const { addNotification } = useNotificationStore()
   const [title, setTitle] = useState('')
   const [details, setDetails] = useState('')
@@ -249,99 +247,51 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
         return;
       }
 
-      try {
-        // First, create inspection with base64 images in database
-        const initialInspection: Omit<Inspection, "id"> = {
-          title,
-          status: 'Pending',
-          location: {
-            address,
-            latitude,
-            longitude,
-          },
-          scheduledDate: new Date().toISOString(),
-          inspector: {
-            name: 'Meet Desai',
-            id: 'MD001',
-            email: 'meet.desai@example.com'
-          },
-          communityBoard: '211',
-          details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
-          images: images, // Store base64 images initially
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          synced: false,
-        };
+      const inspection: Omit<Inspection, "id"> = {
+        title,
+        status: 'Pending',
+        location: {
+          address,
+          latitude,
+          longitude,
+        },
+        scheduledDate: new Date().toISOString(),
+        inspector: {
+          name: 'Meet Desai',
+          id: 'MD001',
+          email: 'meet.desai@example.com'
+        },
+        communityBoard: '211',
+        details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
+        images: images,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        synced: false,
+      }
 
-        // Convert base64 images to Files for database storage
-        const imageFiles = images.map((base64, index) => {
-          const byteString = atob(base64);
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-          }
-          const blob = new Blob([ab], { type: 'image/jpeg' });
-          return new File([blob], `image-${index}.jpg`, { type: 'image/jpeg' });
-        });
-
-        // Save inspection and get the saved inspection with ID
-        const savedInspection = await onSave(initialInspection, imageFiles);
-
-        if (!savedInspection.id) {
-          throw new Error('No inspection ID received');
+      const imageFiles = images.map((base64, index) => {
+        const byteString = atob(base64);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
         }
+        const blob = new Blob([ab], { type: 'image/jpeg' });
+        return new File([blob], `image-${index}.jpg`, { type: 'image/jpeg' });
+      });
 
-        // Then upload images to blob storage
-        const imageUrls = await Promise.all(
-          images.map(async (base64, index) => {
-            const fileName = `inspection-${savedInspection.id}-${index}.jpg`;
-            try {
-              const url = await blobStorageService.uploadBase64Image(base64, fileName);
-              return url;
-            } catch (error) {
-              console.error(`Failed to upload image ${index}:`, error);
-              throw new Error(`Failed to upload image ${index}: ${error.message}`);
-            }
-          })
-        );
-
-        // Update inspection with blob URLs
-        await onUpdateImages(savedInspection.id, imageUrls);
-
+      try {
+        await onSave(inspection, imageFiles);
         addNotification({
           type: 'success',
           title: 'Inspection Created',
           message: 'New inspection has been created successfully.',
         });
-
       } catch (saveError) {
         console.error('Error saving inspection:', saveError);
         if (isPWA()) {
           try {
-            localStorage.setItem(`pendingInspection_${Date.now()}`, JSON.stringify({
-              inspection: {
-                title,
-                status: 'Pending',
-                location: { address, latitude, longitude },
-                scheduledDate: new Date().toISOString(),
-                inspector: {
-                  name: 'Meet Desai',
-                  id: 'MD001',
-                  email: 'meet.desai@example.com'
-                },
-                communityBoard: '211',
-                details: details || `LOCATION: ${address}\nINSPECTION DATE: ${new Date().toLocaleString()}`,
-                images: images,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                synced: false,
-              },
-              images: images.map((base64, index) => ({
-                base64,
-                fileName: `image-${index}.jpg`
-              }))
-            }));
+            localStorage.setItem(`pendingInspection_${Date.now()}`, JSON.stringify({ inspection, images }));
             addNotification({
               type: 'warning',
               title: 'Offline Mode',
@@ -375,7 +325,6 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
       }
     }
   }
-
 
   return (
     <>
@@ -540,9 +489,5 @@ export function NewInspectionDialog({ open, onOpenChange, onSave }: NewInspectio
       )}
     </>
   )
-}
-
-function onUpdateImages(id: string, imageUrls: string[]) {
-  throw new Error('Function not implemented.')
 }
 
