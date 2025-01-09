@@ -41,10 +41,10 @@ export function BottomNav({ isOpen, setIsOpen, isMobile }: BottomNavProps) {
         title: "Logged Out",
         description: "You have been successfully logged out.",
       })
-      router.push('/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout error:', error)
-      router.push('/login')
+      router.push('/')
     }
   }
 
